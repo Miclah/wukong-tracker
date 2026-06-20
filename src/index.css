@@ -2,10 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #1a1410; /* canvas */
+    color: #e8d9b0;            /* parchment-text */
+    font-family: Inter, system-ui, sans-serif;
+    min-height: 100vh;
+  }
 }
