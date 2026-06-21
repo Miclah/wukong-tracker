@@ -16,103 +16,83 @@ const CHAPTER_ZH: Record<number, string> = {
   6: '第六回',
 };
 
-type TagStyle = {
-  label: string;
-  className: string;
-};
+type TagStyle = { label: string; className: string };
 
 const TYPE_TAG: Record<string, TagStyle> = {
-  'yaoguai-king': {
-    label: 'Yaoguai King',
-    className: 'bg-primary/10 text-primary border border-primary/20',
-  },
-  'yaoguai-chief': {
-    label: 'Yaoguai Chief',
-    className: 'bg-gold/10 text-gold border border-gold/20',
-  },
-  'elite-yaoguai': {
-    label: 'Elite Yaoguai',
-    className: 'bg-parchment-aged text-ink-mute border border-hairline',
-  },
-  hidden: {
-    label: 'Hidden',
-    className: 'bg-parchment-aged text-ink-mute border border-dashed border-hairline',
-  },
-  final: {
-    label: 'Final Boss',
-    className: 'bg-primary/10 text-primary border border-primary/20',
-  },
+  'yaoguai-king':  { label: 'Yaoguai King',  className: 'bg-primary/10 text-primary border border-primary/20' },
+  'yaoguai-chief': { label: 'Yaoguai Chief', className: 'bg-gold/10 text-gold border border-gold/20' },
+  'elite-yaoguai': { label: 'Elite Yaoguai', className: 'bg-parchment-aged text-ink-mute border border-hairline' },
+  hidden:          { label: 'Hidden',         className: 'bg-parchment-aged text-ink-mute border border-dashed border-hairline' },
+  final:           { label: 'Final Boss',     className: 'bg-primary/10 text-primary border border-primary/20' },
 };
 
 const FOCUSABLE =
   'a[href],button:not([disabled]),textarea,input,select,[tabindex]:not([tabindex="-1"])';
 
+type NoteFlow = 'death' | 'vanquish' | null;
+
 export function BossDetailModal({ boss, onClose }: Props) {
-  const modalRef = useRef<HTMLDivElement>(null);
+  const modalRef    = useRef<HTMLDivElement>(null);
   const noteInputRef = useRef<HTMLInputElement>(null);
 
-  const progress = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
-  const logAttempt = useTrackerStore((s) => s.logAttempt);
+  const progress     = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
+  const logAttempt   = useTrackerStore((s) => s.logAttempt);
+  const markDefeated = useTrackerStore((s) => s.markDefeated);
 
   const deathCount = progress?.attempts.filter((a) => a.type === 'death').length ?? 0;
+  const defeated   = progress?.defeated ?? false;
 
-  const [deathNoteOpen, setDeathNoteOpen] = useState(false);
-  const [deathNote, setDeathNote] = useState('');
-  const [flashing, setFlashing] = useState(false);
+  const [noteFlow,    setNoteFlow]    = useState<NoteFlow>(null);
+  const [note,        setNote]        = useState('');
+  const [deathFlash,  setDeathFlash]  = useState(false);
+  const [vanqFlash,   setVanqFlash]   = useState(false);
 
-  // Reset note flow when modal closes
+  // Reset all flow state when modal closes
   useEffect(() => {
-    if (!boss) {
-      setDeathNoteOpen(false);
-      setDeathNote('');
-    }
+    if (!boss) { setNoteFlow(null); setNote(''); }
   }, [boss]);
 
-  // Auto-focus note input when it appears
+  // Auto-focus note input when flow opens
   useEffect(() => {
-    if (deathNoteOpen) {
-      noteInputRef.current?.focus();
-    }
-  }, [deathNoteOpen]);
+    if (noteFlow) noteInputRef.current?.focus();
+  }, [noteFlow]);
 
-  // Esc: cancel note flow first, then close modal
+  // Esc: collapse note flow first, then close modal
   useEffect(() => {
     if (!boss) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (deathNoteOpen) {
-          e.stopPropagation();
-          setDeathNoteOpen(false);
-          setDeathNote('');
-        } else {
-          onClose();
-        }
+      if (e.key !== 'Escape') return;
+      if (noteFlow) {
+        e.stopPropagation();
+        setNoteFlow(null);
+        setNote('');
+      } else {
+        onClose();
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [boss, onClose, deathNoteOpen]);
+  }, [boss, onClose, noteFlow]);
 
-  // Focus trap
+  // Focus trap (re-queries when note flow opens/closes)
   useEffect(() => {
     if (!boss || !modalRef.current) return;
-    const el = modalRef.current;
+    const el    = modalRef.current;
     const nodes = el.querySelectorAll<HTMLElement>(FOCUSABLE);
     nodes[0]?.focus();
-
     const trap = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || nodes.length === 0) return;
       const first = nodes[0];
-      const last = nodes[nodes.length - 1];
+      const last  = nodes[nodes.length - 1];
       if (e.shiftKey) {
         if (document.activeElement === first) { e.preventDefault(); last.focus(); }
       } else {
-        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
       }
     };
     el.addEventListener('keydown', trap);
     return () => el.removeEventListener('keydown', trap);
-  }, [boss, deathNoteOpen]);
+  }, [boss, noteFlow]);
 
   // Lock body scroll
   useEffect(() => {
@@ -122,31 +102,40 @@ export function BossDetailModal({ boss, onClose }: Props) {
 
   if (!boss) return null;
 
-  const tag = TYPE_TAG[boss.type];
+  const tag          = TYPE_TAG[boss.type];
   const chapterLabel = `Chapter ${boss.chapter} · ${CHAPTER_ZH[boss.chapter]}`;
 
-  function handleDeathClick() {
-    // Trigger flash animation
-    setFlashing(false);
-    // Use rAF to let React re-render with class removed before re-adding
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setFlashing(true));
-    });
-    setDeathNoteOpen(true);
+  function flash(which: 'death' | 'vanquish') {
+    const set = which === 'death' ? setDeathFlash : setVanqFlash;
+    set(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => set(true)));
   }
 
-  function handleDeathLog() {
+  function openFlow(which: NoteFlow) {
+    flash(which!);
+    setNote('');
+    setNoteFlow(which);
+  }
+
+  function cancelFlow() {
+    setNoteFlow(null);
+    setNote('');
+  }
+
+  function handleLog() {
     if (!boss) return;
-    logAttempt(boss.id, {
-      type: 'death',
-      note: deathNote.trim() || undefined,
-    });
-    setDeathNote('');
-    setDeathNoteOpen(false);
+    const trimmed = note.trim() || undefined;
+    if (noteFlow === 'death') {
+      logAttempt(boss.id, { type: 'death', note: trimmed });
+    } else if (noteFlow === 'vanquish') {
+      markDefeated(boss.id, trimmed);
+    }
+    setNote('');
+    setNoteFlow(null);
   }
 
   function handleNoteKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') handleDeathLog();
+    if (e.key === 'Enter') handleLog();
   }
 
   return (
@@ -214,7 +203,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
 
           <div className="mt-5 border-t border-hairline" />
 
-          {/* Death count */}
+          {/* Death count + defeated status */}
           <div className="mt-5">
             <p className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded mb-1">
               Deaths
@@ -222,55 +211,61 @@ export function BossDetailModal({ boss, onClose }: Props) {
             <p className="font-mono text-counter-lg font-bold text-ink leading-none">
               {deathCount}
             </p>
-            {progress?.defeated && (
+            {defeated && (
               <p className="font-sans text-caption-uc uppercase tracking-[1.2px] text-jade mt-2">
-                Vanquished in {progress.defeatedAtDeathCount} death
-                {progress.defeatedAtDeathCount !== 1 ? 's' : ''}
+                Vanquished in {progress!.defeatedAtDeathCount} death
+                {progress!.defeatedAtDeathCount !== 1 ? 's' : ''}
               </p>
             )}
           </div>
 
           {/* Action buttons */}
           <div className="mt-6 flex flex-col gap-3">
+
             {/* Death button */}
             <button
-              onClick={handleDeathClick}
-              disabled={progress?.defeated}
+              onClick={() => openFlow('death')}
+              disabled={defeated}
               aria-label="Log a death"
-              onAnimationEnd={() => setFlashing(false)}
+              onAnimationEnd={() => setDeathFlash(false)}
               className={[
                 'h-12 w-full rounded-md border border-primary/40 bg-canvas',
                 'font-sans text-btn text-parchment-text tracking-[0.3px]',
-                'transition-colors hover:border-primary/70 hover:bg-canvas/80',
+                'transition-colors hover:border-primary/70',
                 'disabled:opacity-40 disabled:cursor-not-allowed',
-                flashing ? 'btn-death-flash' : '',
+                deathFlash ? 'btn-death-flash' : '',
               ].join(' ')}
             >
               I have died once more
             </button>
 
-            {/* Inline note field */}
-            {deathNoteOpen && (
+            {/* Inline note field — shared by both flows */}
+            {noteFlow && (
               <div className="flex flex-col gap-2 bg-canvas/30 rounded-md p-3 border border-hairline">
                 <input
                   ref={noteInputRef}
                   type="text"
-                  value={deathNote}
-                  onChange={(e) => setDeathNote(e.target.value)}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
                   onKeyDown={handleNoteKeyDown}
                   placeholder="What happened..."
-                  aria-label="Death note"
+                  aria-label={noteFlow === 'death' ? 'Death note' : 'Vanquished note'}
                   className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={handleDeathLog}
-                    className="flex-1 h-9 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
+                    onClick={handleLog}
+                    className={[
+                      'flex-1 h-9 rounded-md font-sans text-btn tracking-[0.3px] transition-colors',
+                      noteFlow === 'vanquish'
+                        ? 'bg-primary text-on-vermilion hover:bg-primary-active'
+                        : 'bg-primary text-on-vermilion hover:bg-primary-active',
+                    ].join(' ')}
                   >
                     Log
                   </button>
                   <button
-                    onClick={() => { setDeathNoteOpen(false); setDeathNote(''); }}
+                    onClick={cancelFlow}
                     className="px-4 h-9 rounded-md font-sans text-btn text-ink-mute hover:bg-parchment-aged transition-colors"
                   >
                     Cancel
@@ -279,14 +274,30 @@ export function BossDetailModal({ boss, onClose }: Props) {
               </div>
             )}
 
-            {/* Vanquished button — wired in 2.4 */}
-            <button
-              disabled
-              aria-label="Mark as vanquished (coming soon)"
-              className="h-12 w-full rounded-md bg-primary/40 font-sans text-btn text-on-vermilion tracking-[0.3px] opacity-40 cursor-not-allowed"
-            >
-              Vanquished
-            </button>
+            {/* Vanquished button */}
+            {defeated ? (
+              <div
+                aria-label="Boss defeated"
+                className="h-12 w-full rounded-md border border-jade/40 flex items-center justify-center gap-2 font-sans text-btn text-jade tracking-[0.3px]"
+              >
+                <span>✓</span>
+                <span>Vanquished</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => openFlow('vanquish')}
+                aria-label="Mark as vanquished"
+                onAnimationEnd={() => setVanqFlash(false)}
+                className={[
+                  'h-12 w-full rounded-md bg-primary text-on-vermilion',
+                  'font-sans text-btn tracking-[0.3px]',
+                  'hover:bg-primary-active transition-colors',
+                  vanqFlash ? 'btn-death-flash' : '',
+                ].join(' ')}
+              >
+                Vanquished
+              </button>
+            )}
           </div>
         </div>
       </div>
