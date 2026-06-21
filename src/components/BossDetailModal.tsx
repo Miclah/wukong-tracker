@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Boss } from '../types';
 import { useTrackerStore } from '../store/useTrackerStore';
 import { SealStamp } from './SealStamp';
+import { AttemptTimeline } from './AttemptTimeline';
 
 type Props = {
   boss: Boss | null;
@@ -306,6 +307,17 @@ export function BossDetailModal({ boss, onClose }: Props) {
               </button>
             )}
           </div>
+
+            {/* Attempt timeline */}
+            {(progress?.attempts?.length ?? 0) > 0 && (
+              <>
+                <div className="mt-5 border-t border-hairline" />
+                <p className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded mt-4 mb-0">
+                  History
+                </p>
+                <AttemptTimeline attempts={progress!.attempts} />
+              </>
+            )}
         </div>
       </div>
     </div>
