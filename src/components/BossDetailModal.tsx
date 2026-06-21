@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Boss } from '../types';
 import { useTrackerStore } from '../store/useTrackerStore';
+import { SealStamp } from './SealStamp';
 
 type Props = {
   boss: Boss | null;
@@ -162,7 +163,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
         </button>
 
         {/* Left column — boss art */}
-        <div className="sm:w-[44%] flex-shrink-0 bg-ink-soft">
+        <div className="sm:w-[44%] flex-shrink-0 bg-ink-soft relative">
           {boss.imageUrl ? (
             <img
               src={boss.imageUrl}
@@ -172,6 +173,12 @@ export function BossDetailModal({ boss, onClose }: Props) {
           ) : (
             <div className="w-full h-48 sm:h-full flex items-center justify-center text-parchment-text-mute font-zh text-zh">
               {boss.nameZh}
+            </div>
+          )}
+          {/* Seal stamp overlay on defeated bosses */}
+          {defeated && (
+            <div className="absolute bottom-4 right-4 opacity-80">
+              <SealStamp size={72} />
             </div>
           )}
         </div>
