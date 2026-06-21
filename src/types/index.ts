@@ -5,45 +5,57 @@ export type BossType =
   | 'hidden'
   | 'final';
 
-export type Chapter = 1 | 2 | 3 | 4 | 5 | 6;
-
-export interface Boss {
+export type Boss = {
   id: string;
   name: string;
   nameZh: string;
-  chapter: Chapter;
+  chapter: 1 | 2 | 3 | 4 | 5 | 6;
   location: string;
   type: BossType;
   imageUrl: string;
-  lore?: string;
-  fandomUrl: string;
   mapX: number;
   mapY: number;
-}
+  lore?: string;
+  fandomUrl: string;
+};
 
-export interface AttemptGif {
+export type GifData = {
   url: string;
   thumbnailUrl: string;
   description: string;
-}
+};
 
-export interface Attempt {
+export type AttemptType = 'death' | 'kill';
+
+export type Attempt = {
   id: string;
-  type: 'death' | 'kill';
+  type: AttemptType;
   timestamp: number;
-  gif?: AttemptGif;
+  gif?: GifData;
   note?: string;
-}
+};
 
-export interface BossProgress {
+export type BossProgress = {
   bossId: string;
   attempts: Attempt[];
   defeated: boolean;
   defeatedAtDeathCount: number | null;
-}
+};
 
-export interface TrackerState {
+export type TrackerState = {
   progress: Record<string, BossProgress>;
   reactionsEnabled: boolean;
   unlockedAchievements: string[];
-}
+  theme: 'dark' | 'light';
+  lastBackupAt: number | null;
+};
+
+export type TrackerActions = {
+  logAttempt: (bossId: string, attempt: Omit<Attempt, 'id' | 'timestamp'>) => void;
+  markDefeated: (bossId: string, note?: string) => void;
+  resetBoss: (bossId: string) => void;
+  setReactionsEnabled: (enabled: boolean) => void;
+  unlockAchievement: (achievementId: string) => void;
+  setTheme: (theme: 'dark' | 'light') => void;
+  setLastBackupAt: (ts: number) => void;
+};
