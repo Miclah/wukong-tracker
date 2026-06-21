@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Boss } from '../types';
 import { useTrackerStore } from '../store/useTrackerStore';
 
@@ -49,20 +49,51 @@ const FOCUSABLE =
 
 export function BossDetailModal({ boss, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const noteInputRef = useRef<HTMLInputElement>(null);
+
   const progress = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
+  const logAttempt = useTrackerStore((s) => s.logAttempt);
+
   const deathCount = progress?.attempts.filter((a) => a.type === 'death').length ?? 0;
 
-  // Esc to dismiss
+  const [deathNoteOpen, setDeathNoteOpen] = useState(false);
+  const [deathNote, setDeathNote] = useState('');
+  const [flashing, setFlashing] = useState(false);
+
+  // Reset note flow when modal closes
+  useEffect(() => {
+    if (!boss) {
+      setDeathNoteOpen(false);
+      setDeathNote('');
+    }
+  }, [boss]);
+
+  // Auto-focus note input when it appears
+  useEffect(() => {
+    if (deathNoteOpen) {
+      noteInputRef.current?.focus();
+    }
+  }, [deathNoteOpen]);
+
+  // Esc: cancel note flow first, then close modal
   useEffect(() => {
     if (!boss) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (deathNoteOpen) {
+          e.stopPropagation();
+          setDeathNoteOpen(false);
+          setDeathNote('');
+        } else {
+          onClose();
+        }
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [boss, onClose]);
+  }, [boss, onClose, deathNoteOpen]);
 
-  // Focus trap — run after content mounts
+  // Focus trap
   useEffect(() => {
     if (!boss || !modalRef.current) return;
     const el = modalRef.current;
@@ -74,35 +105,49 @@ export function BossDetailModal({ boss, onClose }: Props) {
       const first = nodes[0];
       const last = nodes[nodes.length - 1];
       if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
       } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     };
     el.addEventListener('keydown', trap);
     return () => el.removeEventListener('keydown', trap);
-  }, [boss]);
+  }, [boss, deathNoteOpen]);
 
-  // Prevent body scroll while open
+  // Lock body scroll
   useEffect(() => {
-    if (boss) {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    if (boss) document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
   }, [boss]);
 
   if (!boss) return null;
 
   const tag = TYPE_TAG[boss.type];
   const chapterLabel = `Chapter ${boss.chapter} · ${CHAPTER_ZH[boss.chapter]}`;
+
+  function handleDeathClick() {
+    // Trigger flash animation
+    setFlashing(false);
+    // Use rAF to let React re-render with class removed before re-adding
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setFlashing(true));
+    });
+    setDeathNoteOpen(true);
+  }
+
+  function handleDeathLog() {
+    if (!boss) return;
+    logAttempt(boss.id, {
+      type: 'death',
+      note: deathNote.trim() || undefined,
+    });
+    setDeathNote('');
+    setDeathNoteOpen(false);
+  }
+
+  function handleNoteKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') handleDeathLog();
+  }
 
   return (
     <div
@@ -143,8 +188,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
         </div>
 
         {/* Right column — info */}
-        <div className="flex-1 flex flex-col overflow-y-auto p-6 gap-0">
-          {/* Boss name */}
+        <div className="flex-1 flex flex-col overflow-y-auto p-6">
           <h2
             id="modal-boss-name"
             className="font-display text-display-md font-medium text-ink leading-tight"
@@ -152,17 +196,14 @@ export function BossDetailModal({ boss, onClose }: Props) {
             {boss.name}
           </h2>
 
-          {/* Chinese subtitle */}
           <p className="font-zh text-zh text-ink-mute mt-1">{boss.nameZh}</p>
 
-          {/* Chapter + location */}
           <p className="font-sans text-body-sm text-ink-faded mt-3">
             {chapterLabel}
             <span className="mx-2 text-hairline">·</span>
             {boss.location}
           </p>
 
-          {/* Type tag */}
           {tag && (
             <span
               className={`mt-3 self-start font-sans text-caption-uc uppercase tracking-[1.2px] rounded-sm px-2 py-0.5 ${tag.className}`}
@@ -171,7 +212,6 @@ export function BossDetailModal({ boss, onClose }: Props) {
             </span>
           )}
 
-          {/* Divider */}
           <div className="mt-5 border-t border-hairline" />
 
           {/* Death count */}
@@ -190,14 +230,63 @@ export function BossDetailModal({ boss, onClose }: Props) {
             )}
           </div>
 
-          {/* Buttons placeholder — wired in 2.3 / 2.4 */}
+          {/* Action buttons */}
           <div className="mt-6 flex flex-col gap-3">
-            <div className="h-12 rounded-md border border-primary/40 bg-canvas flex items-center justify-center font-sans text-btn text-parchment-text-mute tracking-[0.3px] opacity-40 select-none">
+            {/* Death button */}
+            <button
+              onClick={handleDeathClick}
+              disabled={progress?.defeated}
+              aria-label="Log a death"
+              onAnimationEnd={() => setFlashing(false)}
+              className={[
+                'h-12 w-full rounded-md border border-primary/40 bg-canvas',
+                'font-sans text-btn text-parchment-text tracking-[0.3px]',
+                'transition-colors hover:border-primary/70 hover:bg-canvas/80',
+                'disabled:opacity-40 disabled:cursor-not-allowed',
+                flashing ? 'btn-death-flash' : '',
+              ].join(' ')}
+            >
               I have died once more
-            </div>
-            <div className="h-12 rounded-md bg-primary/40 flex items-center justify-center font-sans text-btn text-on-vermilion tracking-[0.3px] opacity-40 select-none">
+            </button>
+
+            {/* Inline note field */}
+            {deathNoteOpen && (
+              <div className="flex flex-col gap-2 bg-canvas/30 rounded-md p-3 border border-hairline">
+                <input
+                  ref={noteInputRef}
+                  type="text"
+                  value={deathNote}
+                  onChange={(e) => setDeathNote(e.target.value)}
+                  onKeyDown={handleNoteKeyDown}
+                  placeholder="What happened..."
+                  aria-label="Death note"
+                  className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDeathLog}
+                    className="flex-1 h-9 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
+                  >
+                    Log
+                  </button>
+                  <button
+                    onClick={() => { setDeathNoteOpen(false); setDeathNote(''); }}
+                    className="px-4 h-9 rounded-md font-sans text-btn text-ink-mute hover:bg-parchment-aged transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Vanquished button — wired in 2.4 */}
+            <button
+              disabled
+              aria-label="Mark as vanquished (coming soon)"
+              className="h-12 w-full rounded-md bg-primary/40 font-sans text-btn text-on-vermilion tracking-[0.3px] opacity-40 cursor-not-allowed"
+            >
               Vanquished
-            </div>
+            </button>
           </div>
         </div>
       </div>
