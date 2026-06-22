@@ -21,6 +21,8 @@ export default function App() {
   const [selectedBoss, setSelectedBoss] = useState<Boss | null>(null);
 
   const progress = useTrackerStore((s) => s.progress);
+  const gifPickerEnabled = useTrackerStore((s) => s.reactionsEnabled);
+  const setGifPickerEnabled = useTrackerStore((s) => s.setReactionsEnabled);
 
   const visibleBosses =
     chapter === 0 ? bosses : bosses.filter((b) => b.chapter === chapter);
@@ -38,6 +40,31 @@ export default function App() {
                 The Suffering
               </h1>
             </div>
+
+            {/* GIF picker toggle */}
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <span className="font-sans text-[13px] text-parchment-text-mute">GIF picker</span>
+              <button
+                role="switch"
+                aria-checked={gifPickerEnabled}
+                onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
+                className={[
+                  'relative w-10 h-5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
+                  gifPickerEnabled
+                    ? 'bg-primary border-primary'
+                    : 'bg-canvas-soft border-hairline',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'absolute top-0.5 w-4 h-4 rounded-full transition-transform',
+                    gifPickerEnabled
+                      ? 'translate-x-5 bg-on-vermilion'
+                      : 'translate-x-0.5 bg-ink-faded',
+                  ].join(' ')}
+                />
+              </button>
+            </label>
           </div>
 
           {/* Root tab row */}
