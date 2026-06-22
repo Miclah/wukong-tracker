@@ -1,3 +1,5 @@
+export type Chapter = 1 | 2 | 3 | 4 | 5 | 6;
+
 export type BossType =
   | 'yaoguai-king'
   | 'yaoguai-chief'
