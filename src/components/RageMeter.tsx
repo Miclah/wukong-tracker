@@ -9,7 +9,7 @@ function litSegments(rage: number): number {
 }
 
 // Colour shifts from amber → vermilion as rage climbs
-function flameColour(index: number, total: number): string {
+function flameColour(_index: number, total: number): string {
   if (total <= 3) return '#c89b3c';   // gold — mild annoyance
   if (total <= 6) return '#c4453a';   // vermilion — genuine rage
   return '#9e3329';                    // primary-active — pure suffering
