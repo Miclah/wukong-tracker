@@ -52,14 +52,15 @@ export const useTrackerStore = create<Store>()(
         });
       },
 
-      markDefeated(bossId, note) {
+      markDefeated(bossId, options) {
         set((state) => {
           const prev = getOrInit(state.progress, bossId);
           const killAttempt: Attempt = {
             id: crypto.randomUUID(),
             timestamp: Date.now(),
             type: 'kill',
-            note: note || undefined,
+            note: options?.note || undefined,
+            gif: options?.gif,
           };
           const updatedAttempts = [killAttempt, ...prev.attempts];
           return {
