@@ -52,7 +52,7 @@ export type TrackerState = {
 
 export type TrackerActions = {
   logAttempt: (bossId: string, attempt: Omit<Attempt, 'id' | 'timestamp'>) => void;
-  markDefeated: (bossId: string, note?: string) => void;
+  markDefeated: (bossId: string, options?: { note?: string; gif?: GifData }) => void;
   resetBoss: (bossId: string) => void;
   setReactionsEnabled: (enabled: boolean) => void;
   unlockAchievement: (achievementId: string) => void;
