@@ -37,21 +37,29 @@ type ActiveFlow = 'death' | 'vanquish' | null;
 export function BossDetailModal({ boss, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const progress     = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
-  const logAttempt   = useTrackerStore((s) => s.logAttempt);
-  const markDefeated = useTrackerStore((s) => s.markDefeated);
+  const progress        = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
+  const logAttempt      = useTrackerStore((s) => s.logAttempt);
+  const markDefeated    = useTrackerStore((s) => s.markDefeated);
+  const gifPickerEnabled = useTrackerStore((s) => s.reactionsEnabled);
 
   const deathCount = progress?.attempts.filter((a) => a.type === 'death').length ?? 0;
   const defeated   = progress?.defeated ?? false;
 
   const [activeFlow,  setActiveFlow]  = useState<ActiveFlow>(null);
+  const [note,        setNote]        = useState('');
   const [deathFlash,  setDeathFlash]  = useState(false);
   const [vanqFlash,   setVanqFlash]   = useState(false);
+  const noteInputRef = useRef<HTMLInputElement>(null);
 
   // Reset flow when modal closes
   useEffect(() => {
-    if (!boss) setActiveFlow(null);
+    if (!boss) { setActiveFlow(null); setNote(''); }
   }, [boss]);
+
+  // Auto-focus note input when GIF picker is off
+  useEffect(() => {
+    if (activeFlow && !gifPickerEnabled) noteInputRef.current?.focus();
+  }, [activeFlow, gifPickerEnabled]);
 
   // Esc: collapse picker first, then close modal
   useEffect(() => {
@@ -61,6 +69,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
       if (activeFlow) {
         e.stopPropagation();
         setActiveFlow(null);
+        setNote('');
       } else {
         onClose();
       }
@@ -108,12 +117,13 @@ export function BossDetailModal({ boss, onClose }: Props) {
 
   function openFlow(which: ActiveFlow) {
     flash(which!);
+    setNote('');
     setActiveFlow(which);
   }
 
-  function handleCommit(gif: GifData | null, note: string) {
+  function handleCommit(gif: GifData | null, noteArg: string) {
     if (!boss) return;
-    const noteVal = note || undefined;
+    const noteVal = noteArg || undefined;
     const gifVal  = gif ?? undefined;
     if (activeFlow === 'death') {
       logAttempt(boss.id, { type: 'death', note: noteVal, gif: gifVal });
@@ -121,6 +131,11 @@ export function BossDetailModal({ boss, onClose }: Props) {
       markDefeated(boss.id, { note: noteVal, gif: gifVal });
     }
     setActiveFlow(null);
+    setNote('');
+  }
+
+  function handleNoteLog() {
+    handleCommit(null, note);
   }
 
   return (
@@ -213,13 +228,42 @@ export function BossDetailModal({ boss, onClose }: Props) {
           {/* Action buttons */}
           <div className="mt-6 flex flex-col gap-3">
 
-            {/* GIF picker — shown when a flow is active, replaces both action buttons */}
+            {/* Flow panel — GIF picker (when enabled) or simple note field */}
             {activeFlow ? (
-              <GifPicker
-                category={activeFlow === 'death' ? 'death' : 'kill'}
-                onCommit={handleCommit}
-                onCancel={() => setActiveFlow(null)}
-              />
+              gifPickerEnabled ? (
+                <GifPicker
+                  category={activeFlow === 'death' ? 'death' : 'kill'}
+                  onCommit={handleCommit}
+                  onCancel={() => { setActiveFlow(null); setNote(''); }}
+                />
+              ) : (
+                <div className="flex flex-col gap-2 bg-canvas/30 rounded-md p-3 border border-hairline">
+                  <input
+                    ref={noteInputRef}
+                    type="text"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleNoteLog(); }}
+                    placeholder="What happened… (optional)"
+                    aria-label="Attempt note"
+                    className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleNoteLog}
+                      className="flex-1 h-9 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
+                    >
+                      Log
+                    </button>
+                    <button
+                      onClick={() => { setActiveFlow(null); setNote(''); }}
+                      className="px-4 h-9 rounded-md font-sans text-btn text-ink-mute hover:bg-parchment-aged transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )
             ) : (
               <>
                 {/* Death button */}
