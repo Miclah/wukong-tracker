@@ -4,10 +4,14 @@ import { bosses } from '../data/bosses';
 import { useTrackerStore } from '../store/useTrackerStore';
 import { ChapterTabs } from '../components/ChapterTabs';
 import { BossMapMarker } from '../components/BossMapMarker';
+import { DevPanel } from '../components/DevPanel';
 import type { Boss, Chapter } from '../types';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
+
+// Activated via ?dev=1 in the URL. Never shown in production unless the user adds it.
+const IS_DEV_MODE = new URLSearchParams(window.location.search).get('dev') === '1';
 
 function clamp(v: number, lo: number, hi: number) {
   return Math.min(Math.max(v, lo), hi);
@@ -24,6 +28,14 @@ export function MapView({ onBossClick }: Props) {
   const [tf, setTf] = useState<Transform>({ scale: 1, x: 0, y: 0 });
   const [imgError, setImgError] = useState(false);
 
+  // Dev tool state
+  const [devSelectedBoss, setDevSelectedBoss] = useState<string | null>(null);
+  const [devCoords, setDevCoords] = useState<Record<string, { x: number; y: number }>>(() =>
+    Object.fromEntries(bosses.map((b) => [b.id, { x: b.mapX, y: b.mapY }])),
+  );
+  const [devCrosshair, setDevCrosshair] = useState<{ x: number; y: number } | null>(null);
+  const [exportDone, setExportDone] = useState(false);
+
   const progress = useTrackerStore((s) => s.progress);
   const chapterBosses = bosses.filter((b) => b.chapter === chapter);
 
@@ -37,6 +49,8 @@ export function MapView({ onBossClick }: Props) {
   useEffect(() => {
     setTf({ scale: 1, x: 0, y: 0 });
     setImgError(false);
+    setDevCrosshair(null);
+    setDevSelectedBoss(null);
   }, [chapter]);
 
   const getClamped = useCallback((x: number, y: number, s: number): Transform => {
@@ -112,6 +126,8 @@ export function MapView({ onBossClick }: Props) {
   }, [getClamped]);
 
   const onMouseDown = (e: React.MouseEvent) => {
+    // In dev placement mode, don't pan — let onClick handle coordinate recording
+    if (IS_DEV_MODE && devSelectedBoss) return;
     isDragging.current = true;
     lastPointer.current = { x: e.clientX, y: e.clientY };
   };
@@ -126,12 +142,49 @@ export function MapView({ onBossClick }: Props) {
 
   const stopDrag = () => { isDragging.current = false; };
 
+  // Invert the CSS transform to find where in the div (as %) the user clicked
+  const onContainerClick = (e: React.MouseEvent) => {
+    if (!IS_DEV_MODE || !devSelectedBoss) return;
+    const rect = containerRef.current!.getBoundingClientRect();
+    const W = rect.width;
+    const H = rect.height;
+    const px = ((e.clientX - rect.left - W / 2 - tf.x) / tf.scale) + W / 2;
+    const py = ((e.clientY - rect.top - H / 2 - tf.y) / tf.scale) + H / 2;
+    const mapX = parseFloat(((px / W) * 100).toFixed(1));
+    const mapY = parseFloat(((py / H) * 100).toFixed(1));
+    setDevCoords((prev) => ({ ...prev, [devSelectedBoss]: { x: mapX, y: mapY } }));
+    setDevCrosshair({ x: mapX, y: mapY });
+    setExportDone(false);
+  };
+
+  const handleExport = () => {
+    const placed = Object.fromEntries(
+      bosses
+        .filter((b) => devCoords[b.id]?.x !== 0 || devCoords[b.id]?.y !== 0)
+        .map((b) => [b.id, { mapX: devCoords[b.id].x, mapY: devCoords[b.id].y }]),
+    );
+    navigator.clipboard.writeText(JSON.stringify(placed, null, 2)).then(() => {
+      setExportDone(true);
+      setTimeout(() => setExportDone(false), 2500);
+    });
+  };
+
   const handleChapterChange = (c: Chapter | 0) => {
     if (c !== 0) setChapter(c);
   };
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 89px)' }}>
+      {/* Dev mode instruction bar */}
+      {IS_DEV_MODE && (
+        <div className="bg-primary/10 border-b border-primary/30 px-4 py-1.5 shrink-0">
+          <p className="font-mono text-[11px] text-primary">
+            <span className="font-semibold">DEV MODE</span>
+            {' '}· Select boss → click map to place → Export JSON → paste mapX/mapY into bosses.ts
+          </p>
+        </div>
+      )}
+
       {/* Chapter selector */}
       <div className="bg-canvas-soft border-b border-hairline-dark shrink-0">
         <div className="max-w-[1280px] mx-auto px-4 py-3">
@@ -142,12 +195,16 @@ export function MapView({ onBossClick }: Props) {
       {/* Map viewport */}
       <div
         ref={containerRef}
-        className="flex-1 relative overflow-hidden bg-canvas cursor-grab active:cursor-grabbing select-none"
+        className={[
+          'flex-1 relative overflow-hidden bg-canvas select-none',
+          IS_DEV_MODE && devSelectedBoss ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing',
+        ].join(' ')}
         style={{ touchAction: 'none' }}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
+        onClick={onContainerClick}
       >
         {imgError ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none">
@@ -174,15 +231,40 @@ export function MapView({ onBossClick }: Props) {
               className="w-full h-full object-contain"
               onError={() => setImgError(true)}
             />
+
             {chapterBosses.map((boss) => (
               <BossMapMarker
                 key={boss.id}
                 boss={boss}
-                progress={progress[boss.id]}
+                progress={IS_DEV_MODE ? undefined : progress[boss.id]}
                 zoom={tf.scale}
-                onClick={() => onBossClick(boss)}
+                onClick={() => {
+                  if (IS_DEV_MODE && devSelectedBoss) return;
+                  onBossClick(boss);
+                }}
               />
             ))}
+
+            {/* Dev crosshair — shows last-clicked coordinate */}
+            {IS_DEV_MODE && devCrosshair && (
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${devCrosshair.x}%`,
+                  top: `${devCrosshair.y}%`,
+                  transform: `translate(-50%, -50%) scale(${1 / tf.scale})`,
+                  transformOrigin: 'center center',
+                  zIndex: 20,
+                }}
+              >
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <circle cx="20" cy="20" r="17" stroke="#c4453a" strokeWidth="1" opacity="0.5" />
+                  <line x1="20" y1="2" x2="20" y2="38" stroke="#c4453a" strokeWidth="1.5" />
+                  <line x1="2" y1="20" x2="38" y2="20" stroke="#c4453a" strokeWidth="1.5" />
+                  <circle cx="20" cy="20" r="2.5" fill="#c4453a" />
+                </svg>
+              </div>
+            )}
           </div>
         )}
 
@@ -192,6 +274,18 @@ export function MapView({ onBossClick }: Props) {
             {Math.round(tf.scale * 100)}%
           </span>
         </div>
+
+        {/* Dev panel */}
+        {IS_DEV_MODE && (
+          <DevPanel
+            bosses={chapterBosses}
+            devCoords={devCoords}
+            selectedBossId={devSelectedBoss}
+            onSelectBoss={setDevSelectedBoss}
+            onExport={handleExport}
+            exportDone={exportDone}
+          />
+        )}
       </div>
     </div>
   );
