@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { CHAPTER_DATA } from '../data/chapters';
+import { bosses } from '../data/bosses';
+import { useTrackerStore } from '../store/useTrackerStore';
 import { ChapterTabs } from '../components/ChapterTabs';
-import type { Chapter } from '../types';
+import { BossMapMarker } from '../components/BossMapMarker';
+import type { Boss, Chapter } from '../types';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
@@ -12,10 +15,17 @@ function clamp(v: number, lo: number, hi: number) {
 
 type Transform = { scale: number; x: number; y: number };
 
-export function MapView() {
+interface Props {
+  onBossClick: (boss: Boss) => void;
+}
+
+export function MapView({ onBossClick }: Props) {
   const [chapter, setChapter] = useState<Chapter>(1);
   const [tf, setTf] = useState<Transform>({ scale: 1, x: 0, y: 0 });
   const [imgError, setImgError] = useState(false);
+
+  const progress = useTrackerStore((s) => s.progress);
+  const chapterBosses = bosses.filter((b) => b.chapter === chapter);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -151,7 +161,7 @@ export function MapView() {
           </div>
         ) : (
           <div
-            className="w-full h-full"
+            className="w-full h-full relative"
             style={{
               transform: `translate(${tf.x}px, ${tf.y}px) scale(${tf.scale})`,
               transformOrigin: 'center center',
@@ -164,6 +174,15 @@ export function MapView() {
               className="w-full h-full object-contain"
               onError={() => setImgError(true)}
             />
+            {chapterBosses.map((boss) => (
+              <BossMapMarker
+                key={boss.id}
+                boss={boss}
+                progress={progress[boss.id]}
+                zoom={tf.scale}
+                onClick={() => onBossClick(boss)}
+              />
+            ))}
           </div>
         )}
 

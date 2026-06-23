@@ -111,7 +111,7 @@ export default function App() {
 
         {rootTab === 'tally' && <StatsDashboardView />}
 
-        {rootTab === 'map' && <MapView />}
+        {rootTab === 'map' && <MapView onBossClick={setSelectedBoss} />}
       </main>
 
       {/* ── Boss detail modal ───────────────────────────────────── */}
