@@ -5,6 +5,7 @@ import { ChapterTabs } from './components/ChapterTabs';
 import { BossDetailModal } from './components/BossDetailModal';
 import { BossGridView } from './views/BossGridView';
 import { StatsDashboardView } from './views/StatsDashboardView';
+import { MapView } from './views/MapView';
 import type { Boss } from './types';
 
 type RootTab = 'bosses' | 'tally' | 'map';
@@ -110,17 +111,7 @@ export default function App() {
 
         {rootTab === 'tally' && <StatsDashboardView />}
 
-        {rootTab === 'map' && (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-            <span className="font-zh text-[48px] text-parchment-text-mute opacity-30">地圖</span>
-            <p className="font-display text-[22px] font-medium text-parchment-text-mute tracking-[0.3px]">
-              Map view — coming soon
-            </p>
-            <p className="font-sans text-[13px] text-parchment-text-mute">
-              Chapter maps with boss markers arrive in Phase 4b.
-            </p>
-          </div>
-        )}
+        {rootTab === 'map' && <MapView onBossClick={setSelectedBoss} />}
       </main>
 
       {/* ── Boss detail modal ───────────────────────────────────── */}

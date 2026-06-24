@@ -19,16 +19,18 @@ const TABS: Tab[] = [
 interface Props {
   active: Chapter | 0
   onChange: (chapter: Chapter | 0) => void
+  showAll?: boolean
 }
 
-export function ChapterTabs({ active, onChange }: Props) {
+export function ChapterTabs({ active, onChange, showAll = true }: Props) {
+  const visibleTabs = showAll ? TABS : TABS.filter(t => t.value !== 0)
   return (
     <div
       role="tablist"
       aria-label="Filter by chapter"
       className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none"
     >
-      {TABS.map(tab => {
+      {visibleTabs.map(tab => {
         const isActive = tab.value === active
         return (
           <button

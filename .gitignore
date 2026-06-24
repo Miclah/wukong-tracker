@@ -32,3 +32,6 @@ docs/
 .env
 .env.local
 .env.*.local
+
+# Tile download cache (stitch_map_tiles.py)
+.tile-cache/
