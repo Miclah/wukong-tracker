@@ -1,9 +1,13 @@
+import { useRef } from 'react';
 import { useTrackerStore } from '../store/useTrackerStore';
 import { bosses } from '../data/bosses';
 import { StatsCard } from '../components/StatsCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { RageMeter } from '../components/RageMeter';
 import { BossFightTimeline } from '../components/BossFightTimeline';
+import { ShareCTA } from '../components/ShareCTA';
+import { StatsCardForExport } from '../components/StatsCardForExport';
+import { exportStatsPng } from '../lib/statsImage';
 import {
   totalDeaths,
   totalKills,
@@ -27,6 +31,12 @@ const CHAPTER_NAMES: Record<number, string> = {
 
 export function StatsDashboardView() {
   const progress = useTrackerStore((s) => s.progress);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  async function handleDownload() {
+    if (!exportRef.current) return;
+    await exportStatsPng(exportRef.current);
+  }
 
   const deaths = totalDeaths(progress);
   const kills = totalKills(progress);
@@ -111,6 +121,12 @@ export function StatsDashboardView() {
 
       {/* ── Boss fight timeline ────────────────────────────────── */}
       <BossFightTimeline progress={progress} bosses={bosses} />
+
+      {/* ── Share CTA ─────────────────────────────────────────── */}
+      <ShareCTA onDownload={handleDownload} />
+
+      {/* Hidden export card — mounted in DOM so html-to-image can rasterize it */}
+      <StatsCardForExport ref={exportRef} progress={progress} />
     </div>
   );
 }
