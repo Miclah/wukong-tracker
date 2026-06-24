@@ -4,6 +4,7 @@ import { StatsCard } from '../components/StatsCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { RageMeter } from '../components/RageMeter';
 import { BossFightTimeline } from '../components/BossFightTimeline';
+import { ShareCTA } from '../components/ShareCTA';
 import {
   totalDeaths,
   totalKills,
@@ -111,6 +112,9 @@ export function StatsDashboardView() {
 
       {/* ── Boss fight timeline ────────────────────────────────── */}
       <BossFightTimeline progress={progress} bosses={bosses} />
+
+      {/* ── Share CTA ─────────────────────────────────────────── */}
+      <ShareCTA />
     </div>
   );
 }
