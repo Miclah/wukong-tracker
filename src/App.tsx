@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { bosses } from './data/bosses';
 import { useTrackerStore } from './store/useTrackerStore';
+import { useSharedStore } from './store/useSharedStore';
+import { useSharedStateLoad } from './hooks/useSharedStateLoad';
 import { ChapterTabs } from './components/ChapterTabs';
 import { BossDetailModal } from './components/BossDetailModal';
 import { BossGridView } from './views/BossGridView';
 import { StatsDashboardView } from './views/StatsDashboardView';
+import { SharedStatsView } from './views/SharedStatsView';
 import { MapView } from './views/MapView';
 import type { Boss } from './types';
 
@@ -17,6 +20,10 @@ const ROOT_TABS: { id: RootTab; label: string }[] = [
 ];
 
 export default function App() {
+  useSharedStateLoad();
+
+  const sharedSummary = useSharedStore((s) => s.sharedSummary);
+
   const [rootTab, setRootTab] = useState<RootTab>('bosses');
   const [chapter, setChapter] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
   const [selectedBoss, setSelectedBoss] = useState<Boss | null>(null);
@@ -24,6 +31,28 @@ export default function App() {
   const progress = useTrackerStore((s) => s.progress);
   const gifPickerEnabled = useTrackerStore((s) => s.reactionsEnabled);
   const setGifPickerEnabled = useTrackerStore((s) => s.setReactionsEnabled);
+
+  // Shared link takes over the entire view — user data is never shown or touched
+  if (sharedSummary) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <header className="bg-canvas-soft border-b border-hairline-dark sticky top-0 z-30">
+          <div className="max-w-[1280px] mx-auto px-4 py-3 flex items-center gap-3">
+            <span className="font-zh text-[18px] text-parchment-text-mute">受難</span>
+            <h1 className="font-display text-[18px] font-medium tracking-widest uppercase text-parchment-text">
+              The Suffering
+            </h1>
+            <span className="ml-auto font-sans text-[11px] font-semibold tracking-[1.2px] uppercase text-primary border border-primary/40 rounded px-2 py-0.5">
+              Shared
+            </span>
+          </div>
+        </header>
+        <main className="flex-1">
+          <SharedStatsView />
+        </main>
+      </div>
+    );
+  }
 
   const visibleBosses =
     chapter === 0 ? bosses : bosses.filter((b) => b.chapter === chapter);
