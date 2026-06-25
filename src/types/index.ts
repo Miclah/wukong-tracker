@@ -63,6 +63,7 @@ export type TrackerActions = {
   resetBoss: (bossId: string) => void;
   setBossNotes: (bossId: string, notes: string) => void;
   setBossDifficulty: (bossId: string, difficulty: Difficulty) => void;
+  restoreFromBackup: (progress: Record<string, BossProgress>, unlockedAchievements: string[]) => void;
   setReactionsEnabled: (enabled: boolean) => void;
   unlockAchievement: (achievementId: string) => void;
   setTheme: (theme: 'dark' | 'light') => void;

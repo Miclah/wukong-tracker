@@ -130,6 +130,10 @@ export const useTrackerStore = create<Store>()(
       setLastBackupAt(ts) {
         set({ lastBackupAt: ts });
       },
+
+      restoreFromBackup(progress, unlockedAchievements) {
+        set({ progress, unlockedAchievements, lastBackupAt: Date.now() });
+      },
     }),
     { name: STORAGE_KEY },
   ),
