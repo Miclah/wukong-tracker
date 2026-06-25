@@ -5,6 +5,64 @@ import { SealStamp } from './SealStamp';
 import { AttemptTimeline } from './AttemptTimeline';
 import GifPicker from './GifPicker';
 
+// Lightweight markdown renderer — handles headings, bullets, bold, italic
+function renderInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const re = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
+  let last = 0, m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    if (m[0].startsWith('**')) {
+      parts.push(<strong key={m.index} className="font-semibold text-ink">{m[2]}</strong>);
+    } else {
+      parts.push(<em key={m.index}>{m[3]}</em>);
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
+function renderMarkdown(text: string): React.ReactNode {
+  const lines = text.split('\n');
+  const out: React.ReactNode[] = [];
+  let listBuf: string[] = [];
+
+  const flushList = (key: number) => {
+    if (listBuf.length === 0) return;
+    out.push(
+      <ul key={`ul-${key}`} className="list-disc ml-4 my-1 space-y-0.5">
+        {listBuf.map((item, j) => (
+          <li key={j} className="font-sans text-body-sm text-ink-soft leading-snug">
+            {renderInline(item)}
+          </li>
+        ))}
+      </ul>
+    );
+    listBuf = [];
+  };
+
+  lines.forEach((line, i) => {
+    if (/^## /.test(line)) {
+      flushList(i);
+      out.push(<h4 key={i} className="font-display text-title-sm font-medium text-ink mt-3 mb-0.5">{line.slice(3)}</h4>);
+    } else if (/^# /.test(line)) {
+      flushList(i);
+      out.push(<h3 key={i} className="font-display text-title-md font-medium text-ink mt-4 mb-1">{line.slice(2)}</h3>);
+    } else if (/^[-*] /.test(line)) {
+      listBuf.push(line.slice(2));
+    } else if (line.trim() === '') {
+      flushList(i);
+      out.push(<div key={i} className="h-1.5" />);
+    } else {
+      flushList(i);
+      out.push(<p key={i} className="font-sans text-body-sm text-ink-soft leading-relaxed">{renderInline(line)}</p>);
+    }
+  });
+  flushList(lines.length);
+  return <>{out}</>;
+}
+
 type Props = {
   boss: Boss | null;
   onClose: () => void;
@@ -37,23 +95,28 @@ type ActiveFlow = 'death' | 'vanquish' | null;
 export function BossDetailModal({ boss, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const progress        = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
-  const logAttempt      = useTrackerStore((s) => s.logAttempt);
-  const markDefeated    = useTrackerStore((s) => s.markDefeated);
+  const progress         = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
+  const logAttempt       = useTrackerStore((s) => s.logAttempt);
+  const markDefeated     = useTrackerStore((s) => s.markDefeated);
+  const setBossNotes     = useTrackerStore((s) => s.setBossNotes);
   const gifPickerEnabled = useTrackerStore((s) => s.reactionsEnabled);
 
   const deathCount = progress?.attempts.filter((a) => a.type === 'death').length ?? 0;
   const defeated   = progress?.defeated ?? false;
 
-  const [activeFlow,  setActiveFlow]  = useState<ActiveFlow>(null);
-  const [note,        setNote]        = useState('');
-  const [deathFlash,  setDeathFlash]  = useState(false);
-  const [vanqFlash,   setVanqFlash]   = useState(false);
-  const noteInputRef = useRef<HTMLInputElement>(null);
+  const [activeFlow,    setActiveFlow]    = useState<ActiveFlow>(null);
+  const [note,          setNote]          = useState('');
+  const [deathFlash,    setDeathFlash]    = useState(false);
+  const [vanqFlash,     setVanqFlash]     = useState(false);
+  const [notesEditing,  setNotesEditing]  = useState(false);
+  const [notesDraft,    setNotesDraft]    = useState('');
+  const noteInputRef  = useRef<HTMLInputElement>(null);
+  const notesAreaRef  = useRef<HTMLTextAreaElement>(null);
 
-  // Reset flow when modal closes
+  // Reset flow and notes editor when modal closes or boss changes
   useEffect(() => {
-    if (!boss) { setActiveFlow(null); setNote(''); }
+    if (!boss) { setActiveFlow(null); setNote(''); setNotesEditing(false); }
+    else { setNotesEditing(false); }
   }, [boss]);
 
   // Auto-focus note input when GIF picker is off
@@ -61,7 +124,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
     if (activeFlow && !gifPickerEnabled) noteInputRef.current?.focus();
   }, [activeFlow, gifPickerEnabled]);
 
-  // Esc: collapse picker first, then close modal
+  // Esc: collapse picker → cancel notes edit → close modal
   useEffect(() => {
     if (!boss) return;
     const onKey = (e: KeyboardEvent) => {
@@ -70,15 +133,18 @@ export function BossDetailModal({ boss, onClose }: Props) {
         e.stopPropagation();
         setActiveFlow(null);
         setNote('');
+      } else if (notesEditing) {
+        e.stopPropagation();
+        setNotesEditing(false);
       } else {
         onClose();
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [boss, onClose, activeFlow]);
+  }, [boss, onClose, activeFlow, notesEditing]);
 
-  // Focus trap (re-queries when picker opens/closes)
+  // Focus trap (re-queries when picker or notes editor opens/closes)
   useEffect(() => {
     if (!boss || !modalRef.current) return;
     const el    = modalRef.current;
@@ -96,7 +162,12 @@ export function BossDetailModal({ boss, onClose }: Props) {
     };
     el.addEventListener('keydown', trap);
     return () => el.removeEventListener('keydown', trap);
-  }, [boss, activeFlow]);
+  }, [boss, activeFlow, notesEditing]);
+
+  // Auto-focus notes textarea when entering edit mode
+  useEffect(() => {
+    if (notesEditing) notesAreaRef.current?.focus();
+  }, [notesEditing]);
 
   // Lock body scroll
   useEffect(() => {
@@ -136,6 +207,17 @@ export function BossDetailModal({ boss, onClose }: Props) {
 
   function handleNoteLog() {
     handleCommit(null, note);
+  }
+
+  function openNotesEdit() {
+    setNotesDraft(progress?.notes ?? '');
+    setNotesEditing(true);
+  }
+
+  function saveNotes() {
+    if (!boss) return;
+    setBossNotes(boss.id, notesDraft);
+    setNotesEditing(false);
   }
 
   return (
@@ -320,6 +402,69 @@ export function BossDetailModal({ boss, onClose }: Props) {
                 </p>
                 <AttemptTimeline attempts={progress!.attempts} />
               </>
+            )}
+
+            {/* Strategy notes */}
+            <div className="mt-5 border-t border-hairline" />
+            <div className="mt-4 flex items-center justify-between mb-2">
+              <p className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded">
+                Strategy Notes
+              </p>
+              {!notesEditing && (
+                <button
+                  onClick={openNotesEdit}
+                  aria-label="Edit strategy notes"
+                  className="text-ink-faded hover:text-ink-mute transition-colors font-sans text-caption px-2 py-0.5 rounded hover:bg-parchment-aged"
+                >
+                  ✎ Edit
+                </button>
+              )}
+            </div>
+
+            {notesEditing ? (
+              <div className="flex flex-col gap-2">
+                <textarea
+                  ref={notesAreaRef}
+                  value={notesDraft}
+                  onChange={(e) => setNotesDraft(e.target.value)}
+                  placeholder="Strategy notes, weaknesses, salty venting… Markdown supported."
+                  aria-label="Strategy notes"
+                  rows={6}
+                  className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60 resize-y"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveNotes}
+                    className="flex-1 h-9 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setNotesEditing(false)}
+                    className="px-4 h-9 rounded-md font-sans text-btn text-ink-mute hover:bg-parchment-aged transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : progress?.notes ? (
+              <div
+                className="cursor-pointer"
+                onClick={openNotesEdit}
+                role="button"
+                aria-label="Edit strategy notes"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openNotesEdit(); }}
+              >
+                {renderMarkdown(progress.notes)}
+              </div>
+            ) : (
+              <button
+                onClick={openNotesEdit}
+                className="w-full text-left font-sans text-body-sm text-ink-faded italic hover:text-ink-mute transition-colors py-1"
+              >
+                Add strategy notes…
+              </button>
             )}
         </div>
       </div>

@@ -86,6 +86,18 @@ export const useTrackerStore = create<Store>()(
         }));
       },
 
+      setBossNotes(bossId, notes) {
+        set((state) => {
+          const prev = getOrInit(state.progress, bossId);
+          return {
+            progress: {
+              ...state.progress,
+              [bossId]: { ...prev, notes },
+            },
+          };
+        });
+      },
+
       setReactionsEnabled(enabled) {
         set({ reactionsEnabled: enabled });
       },
