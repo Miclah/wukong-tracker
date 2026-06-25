@@ -5,9 +5,11 @@ import { StatsCard } from '../components/StatsCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { RageMeter } from '../components/RageMeter';
 import { BossFightTimeline } from '../components/BossFightTimeline';
+import { AchievementPill } from '../components/AchievementPill';
 import { ShareCTA } from '../components/ShareCTA';
 import { StatsCardForExport } from '../components/StatsCardForExport';
 import { exportStatsPng } from '../lib/statsImage';
+import { ACHIEVEMENTS } from '../data/achievements';
 import {
   totalDeaths,
   totalKills,
@@ -30,7 +32,8 @@ const CHAPTER_NAMES: Record<number, string> = {
 };
 
 export function StatsDashboardView() {
-  const progress = useTrackerStore((s) => s.progress);
+  const progress             = useTrackerStore((s) => s.progress);
+  const unlockedAchievements = useTrackerStore((s) => s.unlockedAchievements);
   const exportRef = useRef<HTMLDivElement>(null);
 
   async function handleDownload() {
@@ -117,6 +120,28 @@ export function StatsDashboardView() {
             />
           </div>
         ))}
+      </div>
+
+      {/* ── Achievements ──────────────────────────────────────── */}
+      <div className="bg-surface-dark-card border border-hairline-dark rounded-lg p-6">
+        <h3 className="font-display text-[22px] font-medium tracking-[0.3px] text-parchment-text mb-5">
+          Achievements
+          {unlockedAchievements.length > 0 && (
+            <span className="ml-3 font-mono text-counter-sm text-gold">
+              {unlockedAchievements.length} / {ACHIEVEMENTS.length}
+            </span>
+          )}
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {ACHIEVEMENTS.map((a) => (
+            <AchievementPill
+              key={a.id}
+              name={a.name}
+              description={a.description}
+              unlocked={unlockedAchievements.includes(a.id)}
+            />
+          ))}
+        </div>
       </div>
 
       {/* ── Boss fight timeline ────────────────────────────────── */}
