@@ -3,8 +3,10 @@ import { bosses } from './data/bosses';
 import { useTrackerStore } from './store/useTrackerStore';
 import { useSharedStore } from './store/useSharedStore';
 import { useSharedStateLoad } from './hooks/useSharedStateLoad';
+import { useAchievementWatcher } from './hooks/useAchievementWatcher';
 import { ChapterTabs } from './components/ChapterTabs';
 import { BossDetailModal } from './components/BossDetailModal';
+import { AchievementToast } from './components/AchievementToast';
 import { BossGridView } from './views/BossGridView';
 import { StatsDashboardView } from './views/StatsDashboardView';
 import { SharedStatsView } from './views/SharedStatsView';
@@ -21,6 +23,7 @@ const ROOT_TABS: { id: RootTab; label: string }[] = [
 
 export default function App() {
   useSharedStateLoad();
+  const { current: toastAchievement, dismissToast } = useAchievementWatcher();
 
   const sharedSummary = useSharedStore((s) => s.sharedSummary);
 
@@ -145,6 +148,15 @@ export default function App() {
 
       {/* ── Boss detail modal ───────────────────────────────────── */}
       <BossDetailModal boss={selectedBoss} onClose={() => setSelectedBoss(null)} />
+
+      {/* ── Achievement toast ───────────────────────────────────── */}
+      {toastAchievement && (
+        <AchievementToast
+          key={toastAchievement.id}
+          achievement={toastAchievement}
+          onDismiss={dismissToast}
+        />
+      )}
     </div>
   );
 }

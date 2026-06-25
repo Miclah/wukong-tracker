@@ -77,6 +77,23 @@ export default {
       boxShadow: {
         'card-lift': '0 2px 8px rgba(107, 31, 26, 0.25)',
       },
+
+      keyframes: {
+        'achievement-in': {
+          '0%':   { opacity: '0', transform: 'translateX(-50%) translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateX(-50%) translateY(0)'    },
+        },
+        'stamp-in': {
+          '0%':   { transform: 'scale(1.4) rotate(-3deg)', opacity: '0' },
+          '60%':  { transform: 'scale(0.92) rotate(-3deg)', opacity: '1' },
+          '100%': { transform: 'scale(1) rotate(-3deg)',    opacity: '1' },
+        },
+      },
+
+      animation: {
+        'achievement-in': 'achievement-in 0.3s ease-out both',
+        'stamp-in':       'stamp-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+      },
     },
   },
   plugins: [],
