@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Boss, GifData } from '../types';
+import type { Boss, Difficulty, GifData } from '../types';
 import { useTrackerStore } from '../store/useTrackerStore';
 import { SealStamp } from './SealStamp';
 import { AttemptTimeline } from './AttemptTimeline';
 import GifPicker from './GifPicker';
+import { InkStrokeRating } from './InkStrokeRating';
 
 // Lightweight markdown renderer — handles headings, bullets, bold, italic
 function renderInline(text: string): React.ReactNode {
@@ -95,11 +96,12 @@ type ActiveFlow = 'death' | 'vanquish' | null;
 export function BossDetailModal({ boss, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const progress         = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
-  const logAttempt       = useTrackerStore((s) => s.logAttempt);
-  const markDefeated     = useTrackerStore((s) => s.markDefeated);
-  const setBossNotes     = useTrackerStore((s) => s.setBossNotes);
-  const gifPickerEnabled = useTrackerStore((s) => s.reactionsEnabled);
+  const progress            = useTrackerStore((s) => (boss ? s.progress[boss.id] : undefined));
+  const logAttempt          = useTrackerStore((s) => s.logAttempt);
+  const markDefeated        = useTrackerStore((s) => s.markDefeated);
+  const setBossNotes        = useTrackerStore((s) => s.setBossNotes);
+  const setBossDifficulty   = useTrackerStore((s) => s.setBossDifficulty);
+  const gifPickerEnabled    = useTrackerStore((s) => s.reactionsEnabled);
 
   const deathCount = progress?.attempts.filter((a) => a.type === 'death').length ?? 0;
   const defeated   = progress?.defeated ?? false;
@@ -293,7 +295,18 @@ export function BossDetailModal({ boss, onClose }: Props) {
             </span>
           )}
 
-          <div className="mt-5 border-t border-hairline" />
+          {/* Difficulty rating */}
+          <div className="mt-4 flex items-center gap-3">
+            <span className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded">
+              Difficulty
+            </span>
+            <InkStrokeRating
+              value={(progress?.difficulty ?? 0) as Difficulty}
+              onChange={(v) => setBossDifficulty(boss.id, v)}
+            />
+          </div>
+
+          <div className="mt-4 border-t border-hairline" />
 
           {/* Death count + defeated status */}
           <div className="mt-5">

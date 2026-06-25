@@ -78,6 +78,17 @@ export function avgDeathsPerBoss(progress: Progress, bosses: Boss[]): number {
   return Math.round((total / attempted.length) * 10) / 10;
 }
 
+/** Bosses sorted by difficulty rating (highest first), rated bosses only. */
+export function hardestRatedBosses(
+  progress: Progress,
+  bosses: Boss[],
+): Array<{ boss: Boss; difficulty: number }> {
+  return bosses
+    .filter((b) => (progress[b.id]?.difficulty ?? 0) > 0)
+    .map((b) => ({ boss: b, difficulty: progress[b.id].difficulty! }))
+    .sort((a, b) => b.difficulty - a.difficulty);
+}
+
 // ── Streaks & Rage ────────────────────────────────────────────────────────────
 
 export type StreakResult = { boss: Boss; streak: number } | null;

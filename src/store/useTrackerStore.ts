@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Attempt, BossProgress, TrackerActions, TrackerState } from '../types';
+import type { Attempt, BossProgress, Difficulty, TrackerActions, TrackerState } from '../types';
 
 const STORAGE_KEY = 'wukong-tracker-v1';
 
@@ -94,6 +94,18 @@ export const useTrackerStore = create<Store>()(
             progress: {
               ...state.progress,
               [bossId]: { ...prev, notes },
+            },
+          };
+        });
+      },
+
+      setBossDifficulty(bossId, difficulty: Difficulty) {
+        set((state) => {
+          const prev = getOrInit(state.progress, bossId);
+          return {
+            progress: {
+              ...state.progress,
+              [bossId]: { ...prev, difficulty },
             },
           };
         });

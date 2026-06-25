@@ -38,12 +38,15 @@ export type Attempt = {
   fightTimeMinutes?: number;
 };
 
+export type Difficulty = 0 | 1 | 2 | 3 | 4 | 5;
+
 export type BossProgress = {
   bossId: string;
   attempts: Attempt[];
   defeated: boolean;
   defeatedAtDeathCount: number | null;
   notes?: string;
+  difficulty?: Difficulty;
 };
 
 export type TrackerState = {
@@ -59,6 +62,7 @@ export type TrackerActions = {
   markDefeated: (bossId: string, options?: { note?: string; gif?: GifData; fightTimeMinutes?: number }) => void;
   resetBoss: (bossId: string) => void;
   setBossNotes: (bossId: string, notes: string) => void;
+  setBossDifficulty: (bossId: string, difficulty: Difficulty) => void;
   setReactionsEnabled: (enabled: boolean) => void;
   unlockAchievement: (achievementId: string) => void;
   setTheme: (theme: 'dark' | 'light') => void;
