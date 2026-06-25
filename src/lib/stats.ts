@@ -62,6 +62,13 @@ export function chapterProgress(progress: Progress, bosses: Boss[]): ChapterProg
   });
 }
 
+/** Total fight time in minutes summed across all logged attempts. */
+export function totalFightTime(progress: Progress): number {
+  return Object.values(progress).reduce((sum, bp) => {
+    return sum + bp.attempts.reduce((s, a) => s + (a.fightTimeMinutes ?? 0), 0);
+  }, 0);
+}
+
 export function avgDeathsPerBoss(progress: Progress, bosses: Boss[]): number {
   const attempted = bosses.filter(
     (b) => progress[b.id] && progress[b.id].attempts.length > 0,

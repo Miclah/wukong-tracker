@@ -61,6 +61,7 @@ export const useTrackerStore = create<Store>()(
             type: 'kill',
             note: options?.note || undefined,
             gif: options?.gif,
+            fightTimeMinutes: options?.fightTimeMinutes,
           };
           const updatedAttempts = [killAttempt, ...prev.attempts];
           return {

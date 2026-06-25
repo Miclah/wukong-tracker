@@ -106,6 +106,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
 
   const [activeFlow,    setActiveFlow]    = useState<ActiveFlow>(null);
   const [note,          setNote]          = useState('');
+  const [fightTime,     setFightTime]     = useState('');
   const [deathFlash,    setDeathFlash]    = useState(false);
   const [vanqFlash,     setVanqFlash]     = useState(false);
   const [notesEditing,  setNotesEditing]  = useState(false);
@@ -115,7 +116,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
 
   // Reset flow and notes editor when modal closes or boss changes
   useEffect(() => {
-    if (!boss) { setActiveFlow(null); setNote(''); setNotesEditing(false); }
+    if (!boss) { setActiveFlow(null); setNote(''); setFightTime(''); setNotesEditing(false); }
     else { setNotesEditing(false); }
   }, [boss]);
 
@@ -189,24 +190,27 @@ export function BossDetailModal({ boss, onClose }: Props) {
   function openFlow(which: ActiveFlow) {
     flash(which!);
     setNote('');
+    setFightTime('');
     setActiveFlow(which);
   }
 
-  function handleCommit(gif: GifData | null, noteArg: string) {
+  function handleCommit(gif: GifData | null, noteArg: string, fightTimeMinutes?: number) {
     if (!boss) return;
     const noteVal = noteArg || undefined;
     const gifVal  = gif ?? undefined;
     if (activeFlow === 'death') {
-      logAttempt(boss.id, { type: 'death', note: noteVal, gif: gifVal });
+      logAttempt(boss.id, { type: 'death', note: noteVal, gif: gifVal, fightTimeMinutes });
     } else if (activeFlow === 'vanquish') {
-      markDefeated(boss.id, { note: noteVal, gif: gifVal });
+      markDefeated(boss.id, { note: noteVal, gif: gifVal, fightTimeMinutes });
     }
     setActiveFlow(null);
     setNote('');
+    setFightTime('');
   }
 
   function handleNoteLog() {
-    handleCommit(null, note);
+    const mins = parseFloat(fightTime);
+    handleCommit(null, note, mins > 0 ? mins : undefined);
   }
 
   function openNotesEdit() {
@@ -316,20 +320,32 @@ export function BossDetailModal({ boss, onClose }: Props) {
                 <GifPicker
                   category={activeFlow === 'death' ? 'death' : 'kill'}
                   onCommit={handleCommit}
-                  onCancel={() => { setActiveFlow(null); setNote(''); }}
+                  onCancel={() => { setActiveFlow(null); setNote(''); setFightTime(''); }}
                 />
               ) : (
                 <div className="flex flex-col gap-2 bg-canvas/30 rounded-md p-3 border border-hairline">
-                  <input
-                    ref={noteInputRef}
-                    type="text"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleNoteLog(); }}
-                    placeholder="What happened… (optional)"
-                    aria-label="Attempt note"
-                    className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      ref={noteInputRef}
+                      type="text"
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleNoteLog(); }}
+                      placeholder="What happened… (optional)"
+                      aria-label="Attempt note"
+                      className="flex-1 rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={fightTime}
+                      onChange={(e) => setFightTime(e.target.value)}
+                      placeholder="min"
+                      aria-label="Fight duration in minutes"
+                      className="w-16 rounded-md bg-canvas border border-hairline-dark px-2 py-2 font-mono text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60 text-center"
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={handleNoteLog}

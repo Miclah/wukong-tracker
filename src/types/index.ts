@@ -35,6 +35,7 @@ export type Attempt = {
   timestamp: number;
   gif?: GifData;
   note?: string;
+  fightTimeMinutes?: number;
 };
 
 export type BossProgress = {
@@ -55,7 +56,7 @@ export type TrackerState = {
 
 export type TrackerActions = {
   logAttempt: (bossId: string, attempt: Omit<Attempt, 'id' | 'timestamp'>) => void;
-  markDefeated: (bossId: string, options?: { note?: string; gif?: GifData }) => void;
+  markDefeated: (bossId: string, options?: { note?: string; gif?: GifData; fightTimeMinutes?: number }) => void;
   resetBoss: (bossId: string) => void;
   setBossNotes: (bossId: string, notes: string) => void;
   setReactionsEnabled: (enabled: boolean) => void;
