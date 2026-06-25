@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { bosses } from './data/bosses';
 import { useTrackerStore } from './store/useTrackerStore';
 import { useSharedStore } from './store/useSharedStore';
@@ -31,9 +31,16 @@ export default function App() {
   const [chapter, setChapter] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
   const [selectedBoss, setSelectedBoss] = useState<Boss | null>(null);
 
-  const progress = useTrackerStore((s) => s.progress);
-  const gifPickerEnabled = useTrackerStore((s) => s.reactionsEnabled);
+  const progress            = useTrackerStore((s) => s.progress);
+  const gifPickerEnabled    = useTrackerStore((s) => s.reactionsEnabled);
   const setGifPickerEnabled = useTrackerStore((s) => s.setReactionsEnabled);
+  const theme               = useTrackerStore((s) => s.theme);
+  const setTheme            = useTrackerStore((s) => s.setTheme);
+
+  // Apply theme class to <html> so CSS variables take effect
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', theme === 'light');
+  }, [theme]);
 
   // Shared link takes over the entire view — user data is never shown or touched
   if (sharedSummary) {
@@ -74,30 +81,42 @@ export default function App() {
               </h1>
             </div>
 
-            {/* GIF picker toggle */}
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <span className="font-sans text-[13px] text-parchment-text-mute">GIF picker</span>
-              <button
-                role="switch"
-                aria-checked={gifPickerEnabled}
-                onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
-                className={[
-                  'relative w-10 h-5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
-                  gifPickerEnabled
-                    ? 'bg-primary border-primary'
-                    : 'bg-canvas-soft border-hairline',
-                ].join(' ')}
-              >
-                <span
+            <div className="flex items-center gap-4">
+              {/* GIF picker toggle */}
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <span className="font-sans text-[13px] text-parchment-text-mute">GIF picker</span>
+                <button
+                  role="switch"
+                  aria-checked={gifPickerEnabled}
+                  onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
                   className={[
-                    'absolute top-0.5 w-4 h-4 rounded-full transition-transform',
+                    'relative w-10 h-5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
                     gifPickerEnabled
-                      ? 'translate-x-5 bg-on-vermilion'
-                      : 'translate-x-0.5 bg-ink-faded',
+                      ? 'bg-primary border-primary'
+                      : 'bg-canvas-soft border-hairline',
                   ].join(' ')}
-                />
+                >
+                  <span
+                    className={[
+                      'absolute top-0.5 w-4 h-4 rounded-full transition-transform',
+                      gifPickerEnabled
+                        ? 'translate-x-5 bg-on-vermilion'
+                        : 'translate-x-0.5 bg-ink-faded',
+                    ].join(' ')}
+                  />
+                </button>
+              </label>
+
+              {/* Theme toggle */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                className="w-8 h-8 flex items-center justify-center rounded-md text-parchment-text-mute hover:text-parchment-text hover:bg-canvas-soft transition-colors text-[16px]"
+              >
+                {theme === 'dark' ? '☀' : '☾'}
               </button>
-            </label>
+            </div>
           </div>
 
           {/* Root tab row */}
