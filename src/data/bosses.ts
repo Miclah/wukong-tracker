@@ -987,7 +987,7 @@ export const bosses: Boss[] = [
     location: 'Bishui Cave — Secret Area',
     type: 'yaoguai-chief',
     imageUrl: '/boss-images/baw-lang-lang.webp',
-    fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Baw-Li-Guhh-Lang_(Spirit)',
+    fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Baw-Lang-lang',
     mapX: 0,
     mapY: 0,
   },
