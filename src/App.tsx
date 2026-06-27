@@ -99,6 +99,15 @@ export default function App() {
     ? Math.floor((Date.now() - firstTs) / 86_400_000) + 1
     : 1;
 
+  const CHAPTER_NUMERALS = ['一', '二', '三', '四', '五', '六'] as const;
+  const chapterStates = ([1, 2, 3, 4, 5, 6] as const).map((ch) => {
+    const chBosses = bosses.filter((b) => b.chapter === ch);
+    const hasAnyAttempt = chBosses.some((b) => (progress[b.id]?.attempts.length ?? 0) > 0);
+    if (!hasAnyAttempt) return 'untouched' as const;
+    const allDefeated = chBosses.every((b) => progress[b.id]?.defeated);
+    return allDefeated ? 'cleared' as const : 'active' as const;
+  });
+
   const visibleBosses =
     chapter === 0 ? bosses : bosses.filter((b) => b.chapter === chapter);
 
@@ -180,6 +189,35 @@ export default function App() {
             </div>
           </div>
 
+          {/* Chapter progress seals strip */}
+          <div className="flex items-center gap-2 py-2 border-t border-hairline-dark/50">
+            {CHAPTER_NUMERALS.map((numeral, i) => {
+              const ch = (i + 1) as 1 | 2 | 3 | 4 | 5 | 6;
+              const state = chapterStates[i];
+              return (
+                <button
+                  key={ch}
+                  onClick={() => { setChapter(ch); setRootTab('bosses'); }}
+                  aria-label={`Chapter ${ch} — ${state}`}
+                  title={`Chapter ${ch}`}
+                  className={[
+                    'relative w-8 h-8 rounded-sm font-zh text-[14px] flex items-center justify-center border transition-colors focus:outline-none focus:ring-1 focus:ring-primary/50',
+                    state === 'cleared'
+                      ? 'bg-primary border-primary text-on-vermilion'
+                      : state === 'active'
+                      ? 'bg-primary/20 border-primary/50 text-primary'
+                      : 'bg-transparent border-hairline text-parchment-text-mute opacity-40 hover:opacity-70',
+                  ].join(' ')}
+                >
+                  {numeral}
+                  {state === 'cleared' && (
+                    <span className="absolute -top-1 -right-1 text-[9px] leading-none text-on-vermilion font-sans font-bold">✓</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Root tab row */}
           <div className="flex gap-0 border-t border-hairline-dark" role="tablist" aria-label="Main navigation">
             {ROOT_TABS.map((tab) => (
@@ -206,7 +244,7 @@ export default function App() {
       <main className="flex-1">
         {rootTab === 'bosses' && (
           <>
-            <div className="bg-canvas-soft border-b border-hairline-dark sticky top-[109px] z-20">
+            <div className="bg-canvas-soft border-b border-hairline-dark sticky top-[149px] z-20">
               <div className="max-w-[1280px] mx-auto px-4 py-3">
                 <ChapterTabs active={chapter} onChange={setChapter} />
               </div>
