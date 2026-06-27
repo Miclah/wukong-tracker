@@ -62,6 +62,20 @@ html.light .ember-glow {
   display: none;
 }
 
+.floating-seal {
+  position: absolute;
+  top: 80px;
+  right: 20px;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  opacity: 0.7;
+  transform: rotate(-3deg);
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
+}
+
 @keyframes calligraphy-fall {
   from { transform: translateY(0); }
   to   { transform: translateY(calc(100vh + 1300px)); }

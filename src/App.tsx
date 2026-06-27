@@ -14,6 +14,7 @@ import { MapView } from './views/MapView';
 import { MountainBackdrop } from './components/atmosphere/MountainBackdrop';
 import { EmberGlow } from './components/atmosphere/EmberGlow';
 import { CalligraphyRain } from './components/atmosphere/CalligraphyRain';
+import { FloatingSeal } from './components/atmosphere/FloatingSeal';
 import type { Boss } from './types';
 
 type RootTab = 'bosses' | 'tally' | 'map';
@@ -157,7 +158,8 @@ export default function App() {
                 <ChapterTabs active={chapter} onChange={setChapter} />
               </div>
             </div>
-            <div className="max-w-[1280px] mx-auto px-4 py-6">
+            <div className="relative max-w-[1280px] mx-auto px-4 py-6">
+              <FloatingSeal image="/textures/seal-suffering.png" />
               <BossGridView
                 bosses={visibleBosses}
                 progress={progress}
@@ -167,9 +169,19 @@ export default function App() {
           </>
         )}
 
-        {rootTab === 'tally' && <StatsDashboardView />}
+        {rootTab === 'tally' && (
+          <div className="relative">
+            <FloatingSeal image="/textures/seal-tally.png" />
+            <StatsDashboardView />
+          </div>
+        )}
 
-        {rootTab === 'map' && <MapView onBossClick={setSelectedBoss} />}
+        {rootTab === 'map' && (
+          <div className="relative">
+            <FloatingSeal image="/textures/seal-map.png" />
+            <MapView onBossClick={setSelectedBoss} />
+          </div>
+        )}
       </main>
 
       {/* ── Boss detail modal ───────────────────────────────────── */}
