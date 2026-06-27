@@ -23,6 +23,33 @@ html.light {
   --color-hairline-dark: #c4b285;
 }
 
+/* ── Atmosphere layer ──────────────────────────────────────────────────────── */
+.mountain-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background: url('/textures/mountains.webp') center / cover no-repeat;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+html.light .mountain-backdrop {
+  opacity: 0.12;
+}
+
+.mountain-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 30%,
+    rgb(var(--color-canvas-rgb)) 100%
+  );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 @layer utilities {
   @keyframes death-flash {
     0%   { box-shadow: inset 0 0 0 100vw rgba(196, 69, 58, 0.0); }
