@@ -62,6 +62,40 @@ html.light .ember-glow {
   display: none;
 }
 
+@keyframes calligraphy-fall {
+  from { transform: translateY(0); }
+  to   { transform: translateY(calc(100vh + 1300px)); }
+}
+
+.calligraphy-rain {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 80px;
+  height: 100vh;
+  z-index: -8;
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  .calligraphy-rain { display: none; }
+}
+
+.calligraphy-column {
+  position: absolute;
+  top: -1300px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  font-family: 'Noto Serif SC', serif;
+  line-height: 1;
+  animation: calligraphy-fall linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calligraphy-column { animation: none; }
+}
+
 .mountain-backdrop::after {
   content: '';
   position: absolute;
