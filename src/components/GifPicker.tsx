@@ -5,8 +5,7 @@ import { getFallbackGifs } from '../lib/gifFallback';
 
 interface Props {
   category: 'death' | 'kill';
-  /** Called when the user attaches a gif (or surprises), plus their note */
-  onCommit: (gif: GifData | null, note: string) => void;
+  onCommit: (gif: GifData | null, note: string, fightTimeMinutes?: number) => void;
   onCancel: () => void;
 }
 
@@ -14,12 +13,13 @@ export default function GifPicker({ category, onCommit, onCancel }: Props) {
   const initialQuery = useRef(
     category === 'death' ? nextDeathQuery() : nextKillQuery()
   );
-  const [query, setQuery]       = useState(initialQuery.current);
-  const [gifs, setGifs]         = useState<GifData[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [selected, setSelected] = useState<GifData | null>(null);
-  const [note, setNote]         = useState('');
-  const noteRef                  = useRef<HTMLInputElement>(null);
+  const [query, setQuery]         = useState(initialQuery.current);
+  const [gifs, setGifs]           = useState<GifData[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [selected, setSelected]   = useState<GifData | null>(null);
+  const [note, setNote]           = useState('');
+  const [fightTime, setFightTime] = useState('');
+  const noteRef                    = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     noteRef.current?.focus();
@@ -45,17 +45,22 @@ export default function GifPicker({ category, onCommit, onCancel }: Props) {
     return () => { cancelled = true; };
   }, [query, category]);
 
+  function parsedTime(): number | undefined {
+    const v = parseFloat(fightTime);
+    return v > 0 ? v : undefined;
+  }
+
   function handleAttach() {
-    if (selected) onCommit(selected, note.trim());
+    if (selected) onCommit(selected, note.trim(), parsedTime());
   }
 
   function handleSurprise() {
     const pick = pickRandom(gifs);
-    onCommit(pick, note.trim());
+    onCommit(pick, note.trim(), parsedTime());
   }
 
   function handleSkip() {
-    onCommit(null, note.trim());
+    onCommit(null, note.trim(), parsedTime());
   }
 
   function handleNoteKey(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -109,17 +114,29 @@ export default function GifPicker({ category, onCommit, onCancel }: Props) {
             ))}
       </div>
 
-      {/* Note field */}
-      <input
-        ref={noteRef}
-        type="text"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        onKeyDown={handleNoteKey}
-        placeholder="What happened… (optional)"
-        aria-label="Attempt note"
-        className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-1.5 font-sans text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
-      />
+      {/* Note + fight time row */}
+      <div className="flex gap-2">
+        <input
+          ref={noteRef}
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          onKeyDown={handleNoteKey}
+          placeholder="What happened… (optional)"
+          aria-label="Attempt note"
+          className="flex-1 rounded-md bg-canvas border border-hairline-dark px-3 py-1.5 font-sans text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
+        />
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          value={fightTime}
+          onChange={(e) => setFightTime(e.target.value)}
+          placeholder="min"
+          aria-label="Fight duration in minutes"
+          className="w-16 rounded-md bg-canvas border border-hairline-dark px-2 py-1.5 font-mono text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60 text-center"
+        />
+      </div>
 
       {/* Action row */}
       <div className="flex gap-2">

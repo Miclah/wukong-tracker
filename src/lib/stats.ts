@@ -62,6 +62,13 @@ export function chapterProgress(progress: Progress, bosses: Boss[]): ChapterProg
   });
 }
 
+/** Total fight time in minutes summed across all logged attempts. */
+export function totalFightTime(progress: Progress): number {
+  return Object.values(progress).reduce((sum, bp) => {
+    return sum + bp.attempts.reduce((s, a) => s + (a.fightTimeMinutes ?? 0), 0);
+  }, 0);
+}
+
 export function avgDeathsPerBoss(progress: Progress, bosses: Boss[]): number {
   const attempted = bosses.filter(
     (b) => progress[b.id] && progress[b.id].attempts.length > 0,
@@ -69,6 +76,17 @@ export function avgDeathsPerBoss(progress: Progress, bosses: Boss[]): number {
   if (attempted.length === 0) return 0;
   const total = attempted.reduce((sum, b) => sum + deathsFor(progress[b.id]), 0);
   return Math.round((total / attempted.length) * 10) / 10;
+}
+
+/** Bosses sorted by difficulty rating (highest first), rated bosses only. */
+export function hardestRatedBosses(
+  progress: Progress,
+  bosses: Boss[],
+): Array<{ boss: Boss; difficulty: number }> {
+  return bosses
+    .filter((b) => (progress[b.id]?.difficulty ?? 0) > 0)
+    .map((b) => ({ boss: b, difficulty: progress[b.id].difficulty! }))
+    .sort((a, b) => b.difficulty - a.difficulty);
 }
 
 // ── Streaks & Rage ────────────────────────────────────────────────────────────

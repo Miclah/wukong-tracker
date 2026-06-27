@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ──────────────────────────────────────────────────────────── */
+/* Dark (default) */
+:root {
+  --color-canvas-rgb: 26 20 16;
+  --color-canvas-soft: #221912;
+  --color-parchment-text: #e8d9b0;
+  --color-parchment-text-mute: #a8987a;
+  --color-surface-dark-card: #2a1f17;
+  --color-hairline-dark: #3a2c1f;
+}
+
+/* Light — aged paper */
+html.light {
+  --color-canvas-rgb: 240 232 204;
+  --color-canvas-soft: #e8ddb8;
+  --color-parchment-text: #1f1812;
+  --color-parchment-text-mute: #6b5a44;
+  --color-surface-dark-card: #d9c89e;
+  --color-hairline-dark: #c4b285;
+}
+
 @layer utilities {
   @keyframes death-flash {
     0%   { box-shadow: inset 0 0 0 100vw rgba(196, 69, 58, 0.0); }
@@ -28,8 +49,8 @@
   }
 
   body {
-    background-color: #1a1410; /* canvas */
-    color: #e8d9b0;            /* parchment-text */
+    background-color: rgb(var(--color-canvas-rgb));
+    color: var(--color-parchment-text);
     font-family: Inter, system-ui, sans-serif;
     min-height: 100vh;
   }
