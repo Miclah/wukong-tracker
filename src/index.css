@@ -34,7 +34,22 @@ html.light {
 }
 
 html.light .mountain-backdrop {
-  opacity: 0.12;
+  opacity: 0.15;
+}
+
+/* Parchment wash over mountain in light theme */
+html.light .mountain-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgb(var(--color-canvas-rgb));
+  opacity: 0.80;
+  pointer-events: none;
+}
+
+/* Light theme calligraphy: darker ink, fixed 0.10 opacity */
+html.light .calligraphy-column {
+  color: rgba(58, 46, 34, 0.10) !important;
 }
 
 .ember-glow {
