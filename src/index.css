@@ -5,8 +5,8 @@
 /* ── Theme tokens ──────────────────────────────────────────────────────────── */
 /* Dark (default) */
 :root {
-  --color-canvas-rgb: 26 20 16;
-  --color-canvas-soft: #221912;
+  --color-canvas-rgb: 33 24 18;
+  --color-canvas-soft: #2a1f17;
   --color-parchment-text: #e8d9b0;
   --color-parchment-text-mute: #a8987a;
   --color-surface-dark-card: #2a1f17;
@@ -35,6 +35,31 @@ html.light {
 
 html.light .mountain-backdrop {
   opacity: 0.12;
+}
+
+.ember-glow {
+  position: fixed;
+  z-index: -9;
+  width: 700px;
+  height: 700px;
+  pointer-events: none;
+  opacity: 0.05;
+}
+
+.ember-glow--tl {
+  top: -250px;
+  left: -250px;
+  background: radial-gradient(circle at center, #c87d3a 0%, transparent 65%);
+}
+
+.ember-glow--br {
+  bottom: -250px;
+  right: -250px;
+  background: radial-gradient(circle at center, #c87d3a 0%, transparent 65%);
+}
+
+html.light .ember-glow {
+  display: none;
 }
 
 .mountain-backdrop::after {

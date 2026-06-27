@@ -12,6 +12,7 @@ import { StatsDashboardView } from './views/StatsDashboardView';
 import { SharedStatsView } from './views/SharedStatsView';
 import { MapView } from './views/MapView';
 import { MountainBackdrop } from './components/atmosphere/MountainBackdrop';
+import { EmberGlow } from './components/atmosphere/EmberGlow';
 import type { Boss } from './types';
 
 type RootTab = 'bosses' | 'tally' | 'map';
@@ -48,6 +49,7 @@ export default function App() {
     return (
       <div className="min-h-screen flex flex-col">
         <MountainBackdrop />
+        <EmberGlow />
         <header className="bg-canvas-soft border-b border-hairline-dark sticky top-0 z-30">
           <div className="max-w-[1280px] mx-auto px-4 py-3 flex items-center gap-3">
             <span className="font-zh text-[18px] text-parchment-text-mute">受難</span>
