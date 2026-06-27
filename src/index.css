@@ -5,8 +5,8 @@
 /* ── Theme tokens ──────────────────────────────────────────────────────────── */
 /* Dark (default) */
 :root {
-  --color-canvas-rgb: 26 20 16;
-  --color-canvas-soft: #221912;
+  --color-canvas-rgb: 33 24 18;
+  --color-canvas-soft: #2a1f17;
   --color-parchment-text: #e8d9b0;
   --color-parchment-text-mute: #a8987a;
   --color-surface-dark-card: #2a1f17;
@@ -21,6 +21,120 @@ html.light {
   --color-parchment-text-mute: #6b5a44;
   --color-surface-dark-card: #d9c89e;
   --color-hairline-dark: #c4b285;
+}
+
+/* ── Atmosphere layer ──────────────────────────────────────────────────────── */
+.mountain-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background: url('/textures/mountains.webp') center / cover no-repeat;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+html.light .mountain-backdrop {
+  opacity: 0.60;
+}
+
+/* Parchment wash over mountain in light theme */
+html.light .mountain-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgb(var(--color-canvas-rgb));
+  opacity: 0.30;
+  pointer-events: none;
+}
+
+/* Light theme calligraphy: darker ink */
+html.light .calligraphy-column {
+  color: rgba(58, 46, 34, 0.45) !important;
+}
+
+.ember-glow {
+  position: fixed;
+  z-index: -9;
+  width: 700px;
+  height: 700px;
+  pointer-events: none;
+  opacity: 0.05;
+}
+
+.ember-glow--tl {
+  top: -250px;
+  left: -250px;
+  background: radial-gradient(circle at center, #c87d3a 0%, transparent 65%);
+}
+
+.ember-glow--br {
+  bottom: -250px;
+  right: -250px;
+  background: radial-gradient(circle at center, #c87d3a 0%, transparent 65%);
+}
+
+html.light .ember-glow {
+  display: none;
+}
+
+.floating-seal {
+  position: absolute;
+  top: 80px;
+  right: 20px;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  opacity: 0.7;
+  transform: rotate(-3deg);
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
+}
+
+@keyframes calligraphy-fall {
+  from { transform: translateY(0); }
+  to   { transform: translateY(calc(100vh + 1300px)); }
+}
+
+.calligraphy-rain {
+  position: fixed;
+  top: 0;
+  /* width set via inline style from CalligraphyRain.tsx (viewport-aware) */
+  height: 100vh;
+  z-index: -8;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.calligraphy-rain--left  { left: 0; }
+.calligraphy-rain--right { right: 0; }
+
+.calligraphy-column {
+  position: absolute;
+  top: -1400px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  font-family: 'Noto Serif SC', serif;
+  line-height: 1;
+  animation: calligraphy-fall linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calligraphy-column { animation: none; }
+}
+
+.mountain-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 30%,
+    rgb(var(--color-canvas-rgb)) 100%
+  );
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 @layer utilities {

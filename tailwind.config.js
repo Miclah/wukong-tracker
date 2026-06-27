@@ -27,6 +27,8 @@ export default {
         gold: '#c89b3c',
         'on-vermilion': '#f5e9d4',
         'on-jade': '#f0ead8',
+        'canvas-warm': '#332419',
+        'glow-ember': '#3a2614',
         'surface-dark-card': 'var(--color-surface-dark-card)',
         hairline: '#4a3a2a',
         'hairline-dark': 'var(--color-hairline-dark)',
