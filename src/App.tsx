@@ -15,6 +15,7 @@ import { MountainBackdrop } from './components/atmosphere/MountainBackdrop';
 import { EmberGlow } from './components/atmosphere/EmberGlow';
 import { CalligraphyRain } from './components/atmosphere/CalligraphyRain';
 import { FloatingSeal } from './components/atmosphere/FloatingSeal';
+import { PROVERBS } from './data/proverbs';
 import type { Boss } from './types';
 
 type RootTab = 'bosses' | 'tally' | 'map';
@@ -24,6 +25,20 @@ const ROOT_TABS: { id: RootTab; label: string }[] = [
   { id: 'tally', label: 'The Tally' },
   { id: 'map', label: 'Map' },
 ];
+
+const SESSION_PROVERB = PROVERBS[Math.floor(Math.random() * PROVERBS.length)];
+
+function toRoman(n: number): string {
+  const map: [number, string][] = [
+    [1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],
+    [50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I'],
+  ];
+  let result = '';
+  for (const [val, sym] of map) {
+    while (n >= val) { result += sym; n -= val; }
+  }
+  return result || 'I';
+}
 
 export default function App() {
   useSharedStateLoad();
@@ -71,6 +86,19 @@ export default function App() {
     );
   }
 
+  const allProgress = Object.values(progress);
+  const totalDeaths = allProgress.reduce(
+    (sum, p) => sum + p.attempts.filter((a) => a.type === 'death').length, 0,
+  );
+  const totalKills = allProgress.filter((p) => p.defeated).length;
+  const allAttempts = allProgress.flatMap((p) => p.attempts);
+  const firstTs = allAttempts.length
+    ? Math.min(...allAttempts.map((a) => a.timestamp))
+    : null;
+  const dayOfPilgrimage = firstTs
+    ? Math.floor((Date.now() - firstTs) / 86_400_000) + 1
+    : 1;
+
   const visibleBosses =
     chapter === 0 ? bosses : bosses.filter((b) => b.chapter === chapter);
 
@@ -80,47 +108,72 @@ export default function App() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="bg-canvas-soft border-b border-hairline-dark sticky top-0 z-30">
         <div className="max-w-[1280px] mx-auto px-4">
-          {/* Title row */}
-          <div className="flex items-center justify-between py-3">
-            <div className="flex items-baseline gap-3">
-              <span className="font-zh text-[18px] text-parchment-text-mute">受難</span>
-              <h1 className="font-display text-[18px] font-medium tracking-widest uppercase text-parchment-text">
-                The Suffering
-              </h1>
+          {/* Three-column title row */}
+          <div className="grid grid-cols-3 items-center py-3 gap-4">
+
+            {/* Left: logo + counters */}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-baseline gap-3">
+                <span className="font-zh text-[18px] text-parchment-text-mute">受難</span>
+                <h1 className="font-display text-[18px] font-medium tracking-widest uppercase text-parchment-text">
+                  The Suffering
+                </h1>
+              </div>
+              <div className="flex items-center gap-2 font-zh text-[13px]">
+                <span className="text-primary">受難</span>
+                <span className="font-mono text-primary font-semibold">{totalDeaths}</span>
+                <span className="text-parchment-text-mute opacity-40">·</span>
+                <span className="text-jade">受勝</span>
+                <span className="font-mono text-jade font-semibold">{totalKills}</span>
+                <span className="text-parchment-text-mute opacity-40">·</span>
+                <span className="text-parchment-text-mute">日</span>
+                <span className="font-mono text-parchment-text-mute font-semibold">{toRoman(dayOfPilgrimage)}</span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            {/* Center: rotating proverb */}
+            <div className="hidden md:flex justify-center">
+              <p className="font-display-alt italic text-[13px] text-parchment-text-mute text-center leading-snug opacity-70">
+                {SESSION_PROVERB}
+              </p>
+            </div>
+
+            {/* Right: toggles */}
+            <div className="flex items-center justify-end gap-3">
               {/* GIF picker toggle */}
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <span className="font-sans text-[13px] text-parchment-text-mute">GIF picker</span>
-                <button
-                  role="switch"
-                  aria-checked={gifPickerEnabled}
-                  onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
-                  className={[
-                    'relative w-10 h-5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
-                    gifPickerEnabled
-                      ? 'bg-primary border-primary'
-                      : 'bg-canvas-soft border-hairline',
-                  ].join(' ')}
-                >
-                  <span
+              <div className="border border-hairline rounded px-2 py-1 flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <span className="font-sans text-[12px] text-parchment-text-mute hidden sm:inline">GIF</span>
+                  <button
+                    role="switch"
+                    aria-checked={gifPickerEnabled}
+                    aria-label="Toggle GIF picker"
+                    onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
                     className={[
-                      'absolute top-0.5 w-4 h-4 rounded-full transition-transform',
+                      'relative w-10 h-5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
                       gifPickerEnabled
-                        ? 'translate-x-5 bg-on-vermilion'
-                        : 'translate-x-0.5 bg-ink-faded',
+                        ? 'bg-primary border-primary'
+                        : 'bg-canvas border-hairline',
                     ].join(' ')}
-                  />
-                </button>
-              </label>
+                  >
+                    <span
+                      className={[
+                        'absolute top-0.5 w-4 h-4 rounded-full transition-transform',
+                        gifPickerEnabled
+                          ? 'translate-x-5 bg-on-vermilion'
+                          : 'translate-x-0.5 bg-ink-faded',
+                      ].join(' ')}
+                    />
+                  </button>
+                </label>
+              </div>
 
               {/* Theme toggle */}
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-                className="w-8 h-8 flex items-center justify-center rounded-md text-parchment-text-mute hover:text-parchment-text hover:bg-canvas-soft transition-colors text-[16px]"
+                className="border border-hairline rounded w-8 h-8 flex items-center justify-center text-parchment-text-mute hover:text-parchment-text hover:border-hairline-dark transition-colors text-[16px]"
               >
                 {theme === 'dark' ? '☀' : '☾'}
               </button>
@@ -153,7 +206,7 @@ export default function App() {
       <main className="flex-1">
         {rootTab === 'bosses' && (
           <>
-            <div className="bg-canvas-soft border-b border-hairline-dark sticky top-[89px] z-20">
+            <div className="bg-canvas-soft border-b border-hairline-dark sticky top-[109px] z-20">
               <div className="max-w-[1280px] mx-auto px-4 py-3">
                 <ChapterTabs active={chapter} onChange={setChapter} />
               </div>
