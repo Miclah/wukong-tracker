@@ -1,39 +1,50 @@
+import { useState, useEffect, useMemo } from 'react';
 import { SUTRA_CHARACTERS } from '../../data/sutra';
 
 const ALL_CHARS = SUTRA_CHARACTERS.flatMap((s) => [...s]);
 
-// Deterministic pseudo-random so columns are stable across renders
 function pr(seed: number): number {
   const x = Math.sin(seed + 1) * 10000;
   return x - Math.floor(x);
 }
 
-interface ColumnConfig {
-  x: number;
-  chars: string[];
-  fontSize: number;
-  opacity: number;
-  duration: number;
-  delay: number;
+function makeColumns(count: number, seedOffset: number, stripWidth: number) {
+  return Array.from({ length: count }, (_, i) => {
+    const s = seedOffset + i;
+    const slot = count === 1 ? 0.5 : i / (count - 1);
+    // Spread from 20px near screen edge to 25px from inner boss-card edge
+    const maxX = Math.max(20, stripWidth - 30);
+    const baseX = 20 + slot * (maxX - 20);
+    return {
+      x: Math.round(baseX + (pr(s * 7) - 0.5) * 8),
+      chars: Array.from({ length: 32 }, (_, j) => ALL_CHARS[(s * 32 + j) % ALL_CHARS.length]),
+      fontSize: 19 + Math.floor(pr(s * 3 + 1) * 5),
+      opacity: 0.18 + pr(s * 5 + 2) * 0.14,
+      duration: 28 + pr(s * 11 + 3) * 24, // 28–52s
+      delay: -(pr(s * 13 + 4) * 32),
+    };
+  });
 }
 
-const COLUMNS: ColumnConfig[] = Array.from({ length: 4 }, (_, i) => ({
-  x: Math.floor(pr(i * 7) * 55),
-  chars: Array.from({ length: 20 }, (_, j) => ALL_CHARS[(i * 20 + j) % ALL_CHARS.length]),
-  fontSize: 18 + Math.floor(pr(i * 3 + 1) * 7),
-  opacity: 0.06 + pr(i * 5 + 2) * 0.04,
-  duration: 10 + pr(i * 11 + 3) * 15,
-  delay: -(pr(i * 13 + 4) * 25),
-}));
+function RainSide({ side, stripWidth }: { side: 'left' | 'right'; stripWidth: number }) {
+  const seedOffset = side === 'left' ? 0 : 50;
+  // ~1 column per 80px of available margin, capped at 8
+  const count = Math.max(2, Math.min(8, Math.floor(stripWidth / 80)));
+  const columns = useMemo(
+    () => makeColumns(count, seedOffset, stripWidth),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [count, seedOffset, stripWidth],
+  );
 
-export function CalligraphyRain() {
+  if (stripWidth < 60) return null;
+
   return (
     <div
-      className="calligraphy-rain"
+      className={`calligraphy-rain calligraphy-rain--${side}`}
+      style={{ width: stripWidth }}
       aria-hidden="true"
-      style={{ pointerEvents: 'none' }}
     >
-      {COLUMNS.map((col, i) => (
+      {columns.map((col, i) => (
         <div
           key={i}
           className="calligraphy-column"
@@ -51,5 +62,24 @@ export function CalligraphyRain() {
         </div>
       ))}
     </div>
+  );
+}
+
+export function CalligraphyRain() {
+  const [stripWidth, setStripWidth] = useState(() =>
+    Math.max(0, (window.innerWidth - 1280) / 2 - 20),
+  );
+
+  useEffect(() => {
+    const update = () => setStripWidth(Math.max(0, (window.innerWidth - 1280) / 2 - 20));
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  return (
+    <>
+      <RainSide side="left"  stripWidth={stripWidth} />
+      <RainSide side="right" stripWidth={stripWidth} />
+    </>
   );
 }

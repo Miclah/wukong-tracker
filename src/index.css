@@ -29,12 +29,12 @@ html.light {
   inset: 0;
   z-index: -10;
   background: url('/textures/mountains.webp') center / cover no-repeat;
-  opacity: 0.08;
+  opacity: 0.18;
   pointer-events: none;
 }
 
 html.light .mountain-backdrop {
-  opacity: 0.15;
+  opacity: 0.60;
 }
 
 /* Parchment wash over mountain in light theme */
@@ -43,13 +43,13 @@ html.light .mountain-backdrop::before {
   position: absolute;
   inset: 0;
   background-color: rgb(var(--color-canvas-rgb));
-  opacity: 0.80;
+  opacity: 0.30;
   pointer-events: none;
 }
 
-/* Light theme calligraphy: darker ink, fixed 0.10 opacity */
+/* Light theme calligraphy: darker ink */
 html.light .calligraphy-column {
-  color: rgba(58, 46, 34, 0.10) !important;
+  color: rgba(58, 46, 34, 0.45) !important;
 }
 
 .ember-glow {
@@ -98,24 +98,23 @@ html.light .ember-glow {
 
 .calligraphy-rain {
   position: fixed;
-  left: 0;
   top: 0;
-  width: 80px;
+  /* width set via inline style from CalligraphyRain.tsx (viewport-aware) */
   height: 100vh;
   z-index: -8;
   overflow: hidden;
+  pointer-events: none;
 }
 
-@media (max-width: 767px) {
-  .calligraphy-rain { display: none; }
-}
+.calligraphy-rain--left  { left: 0; }
+.calligraphy-rain--right { right: 0; }
 
 .calligraphy-column {
   position: absolute;
-  top: -1300px;
+  top: -1400px;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
   font-family: 'Noto Serif SC', serif;
   line-height: 1;
   animation: calligraphy-fall linear infinite;

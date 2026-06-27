@@ -196,7 +196,7 @@ export function MapView({ onBossClick }: Props) {
       <div
         ref={containerRef}
         className={[
-          'flex-1 relative overflow-hidden bg-canvas select-none',
+          'flex-1 relative overflow-hidden select-none',
           IS_DEV_MODE && devSelectedBoss ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing',
         ].join(' ')}
         style={{ touchAction: 'none' }}

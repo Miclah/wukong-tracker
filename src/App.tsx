@@ -114,6 +114,8 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <MountainBackdrop />
+      <EmberGlow />
+      <CalligraphyRain />
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="bg-canvas-soft border-b border-hairline-dark sticky top-0 z-30">
         <div className="max-w-[1280px] mx-auto px-6">
@@ -121,68 +123,69 @@ export default function App() {
           <div className="grid grid-cols-3 items-center py-3 gap-4">
 
             {/* Left: logo + counters */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-baseline gap-3">
-                <span className="font-zh text-[18px] text-parchment-text-mute">受難</span>
-                <h1 className="font-display text-[18px] font-medium tracking-widest uppercase text-parchment-text">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-baseline gap-2">
+                <span className="font-zh text-[15px] text-parchment-text-mute">受難</span>
+                <h1 className="font-display text-[22px] font-semibold tracking-widest uppercase text-parchment-text">
                   The Suffering
                 </h1>
               </div>
-              <div className="flex items-center gap-2 font-zh text-[13px]">
-                <span className="text-primary">受難</span>
-                <span className="font-mono text-primary font-semibold">{totalDeaths}</span>
-                <span className="text-parchment-text-mute opacity-40">·</span>
-                <span className="text-jade">受勝</span>
-                <span className="font-mono text-jade font-semibold">{totalKills}</span>
-                <span className="text-parchment-text-mute opacity-40">·</span>
-                <span className="text-parchment-text-mute">日</span>
-                <span className="font-mono text-parchment-text-mute font-semibold">{toRoman(dayOfPilgrimage)}</span>
+              <div className="flex items-center gap-3 text-[12px]">
+                <span className="flex items-center gap-1">
+                  <span className="font-mono font-bold text-primary text-[15px]">{totalDeaths}</span>
+                  <span className="text-parchment-text-mute">deaths</span>
+                </span>
+                <span className="text-hairline">·</span>
+                <span className="flex items-center gap-1">
+                  <span className="font-mono font-bold text-jade text-[15px]">{totalKills}</span>
+                  <span className="text-parchment-text-mute">kills</span>
+                </span>
+                <span className="text-hairline">·</span>
+                <span className="flex items-center gap-1">
+                  <span className="font-mono font-bold text-parchment-text-mute text-[15px]">{toRoman(dayOfPilgrimage)}</span>
+                  <span className="text-parchment-text-mute">day</span>
+                </span>
               </div>
             </div>
 
             {/* Center: rotating proverb */}
-            <div className="hidden md:flex justify-center">
-              <p className="font-display-alt italic text-[13px] text-parchment-text-mute text-center leading-snug opacity-70">
+            <div className="hidden md:flex justify-center items-center px-2 self-stretch">
+              <p className="font-display-alt italic text-[22px] text-parchment-text text-center leading-snug tracking-wide">
                 {SESSION_PROVERB}
               </p>
             </div>
 
             {/* Right: toggles */}
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-2">
               {/* GIF picker toggle */}
-              <div className="border border-hairline rounded px-2 py-1 flex items-center gap-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <span className="font-sans text-[12px] text-parchment-text-mute hidden sm:inline">GIF</span>
-                  <button
-                    role="switch"
-                    aria-checked={gifPickerEnabled}
-                    aria-label="Toggle GIF picker"
-                    onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
-                    className={[
-                      'relative w-10 h-5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
-                      gifPickerEnabled
-                        ? 'bg-primary border-primary'
-                        : 'bg-canvas border-hairline',
-                    ].join(' ')}
-                  >
-                    <span
-                      className={[
-                        'absolute top-0.5 w-4 h-4 rounded-full transition-transform',
-                        gifPickerEnabled
-                          ? 'translate-x-5 bg-on-vermilion'
-                          : 'translate-x-0.5 bg-ink-faded',
-                      ].join(' ')}
-                    />
-                  </button>
-                </label>
-              </div>
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <span className="font-sans text-[11px] tracking-[0.8px] uppercase text-parchment-text-mute">GIF</span>
+                <button
+                  role="switch"
+                  aria-checked={gifPickerEnabled}
+                  aria-label="Toggle GIF picker"
+                  onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
+                  className={[
+                    'relative w-10 h-5 rounded-full overflow-hidden transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
+                    gifPickerEnabled ? 'bg-primary' : 'bg-hairline',
+                  ].join(' ')}
+                >
+                  <span
+                    className="absolute top-0.5 w-4 h-4 rounded-full bg-parchment-text"
+                    style={{
+                      left: gifPickerEnabled ? 22 : 2,
+                      transition: 'left 0.15s',
+                    }}
+                  />
+                </button>
+              </label>
 
               {/* Theme toggle */}
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-                className="border border-hairline rounded w-8 h-8 flex items-center justify-center text-parchment-text-mute hover:text-parchment-text hover:border-hairline-dark transition-colors text-[16px]"
+                className="w-8 h-8 flex items-center justify-center rounded text-parchment-text-mute hover:text-parchment-text hover:bg-hairline/20 transition-colors text-[16px]"
               >
                 {theme === 'dark' ? '☀' : '☾'}
               </button>
@@ -190,7 +193,7 @@ export default function App() {
           </div>
 
           {/* Chapter progress seals strip */}
-          <div className="flex items-center gap-2 py-2 border-t border-hairline-dark/50">
+          <div className="flex items-center gap-1.5 py-2 border-t border-hairline-dark/50">
             {CHAPTER_NUMERALS.map((numeral, i) => {
               const ch = (i + 1) as 1 | 2 | 3 | 4 | 5 | 6;
               const state = chapterStates[i];
@@ -201,17 +204,18 @@ export default function App() {
                   aria-label={`Chapter ${ch} — ${state}`}
                   title={`Chapter ${ch}`}
                   className={[
-                    'relative w-8 h-8 rounded-sm font-zh text-[14px] flex items-center justify-center border transition-colors focus:outline-none focus:ring-1 focus:ring-primary/50',
+                    'relative flex flex-col items-center justify-center px-2 py-1 rounded-sm border transition-colors focus:outline-none focus:ring-1 focus:ring-primary/50 leading-none gap-0.5',
                     state === 'cleared'
                       ? 'bg-primary border-primary text-on-vermilion'
                       : state === 'active'
                       ? 'bg-primary/20 border-primary/50 text-primary'
-                      : 'bg-transparent border-hairline text-parchment-text-mute opacity-40 hover:opacity-70',
+                      : 'bg-transparent border-hairline text-parchment-text-mute opacity-50 hover:opacity-80',
                   ].join(' ')}
                 >
-                  {numeral}
+                  <span className="font-zh text-[11px]">{numeral}</span>
+                  <span className="font-sans text-[9px] tracking-[0.5px] opacity-80">Ch.{ch}</span>
                   {state === 'cleared' && (
-                    <span className="absolute -top-1 -right-1 text-[9px] leading-none text-on-vermilion font-sans font-bold">✓</span>
+                    <span className="absolute -top-1 -right-1 text-[9px] leading-none font-sans font-bold">✓</span>
                   )}
                 </button>
               );
@@ -243,21 +247,21 @@ export default function App() {
       {/* ── Main content ───────────────────────────────────────── */}
       <main className="flex-1">
         {rootTab === 'bosses' && (
-          <>
+          <div className="relative">
+            <FloatingSeal image="/textures/seal-suffering.png" />
             <div className="bg-canvas-soft border-b border-hairline-dark sticky top-[149px] z-20">
               <div className="max-w-[1280px] mx-auto px-6 py-3">
                 <ChapterTabs active={chapter} onChange={setChapter} />
               </div>
             </div>
-            <div className="relative max-w-[1280px] mx-auto px-6 py-6">
-              <FloatingSeal image="/textures/seal-suffering.png" />
+            <div className="max-w-[1280px] mx-auto px-6 py-6">
               <BossGridView
                 bosses={visibleBosses}
                 progress={progress}
                 onBossClick={setSelectedBoss}
               />
             </div>
-          </>
+          </div>
         )}
 
         {rootTab === 'tally' && (
