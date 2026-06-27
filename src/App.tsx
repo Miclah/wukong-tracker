@@ -116,7 +116,7 @@ export default function App() {
       <MountainBackdrop />
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="bg-canvas-soft border-b border-hairline-dark sticky top-0 z-30">
-        <div className="max-w-[1280px] mx-auto px-4">
+        <div className="max-w-[1280px] mx-auto px-6">
           {/* Three-column title row */}
           <div className="grid grid-cols-3 items-center py-3 gap-4">
 
@@ -245,11 +245,11 @@ export default function App() {
         {rootTab === 'bosses' && (
           <>
             <div className="bg-canvas-soft border-b border-hairline-dark sticky top-[149px] z-20">
-              <div className="max-w-[1280px] mx-auto px-4 py-3">
+              <div className="max-w-[1280px] mx-auto px-6 py-3">
                 <ChapterTabs active={chapter} onChange={setChapter} />
               </div>
             </div>
-            <div className="relative max-w-[1280px] mx-auto px-4 py-6">
+            <div className="relative max-w-[1280px] mx-auto px-6 py-6">
               <FloatingSeal image="/textures/seal-suffering.png" />
               <BossGridView
                 bosses={visibleBosses}

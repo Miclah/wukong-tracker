@@ -79,7 +79,7 @@ export function StatsDashboardView() {
   const deathStreak = hardestStreak(progress, bosses);
 
   return (
-    <div className="max-w-[1280px] mx-auto px-4 py-10 space-y-10">
+    <div className="max-w-[1280px] mx-auto px-6 py-10 space-y-10">
 
       {/* ── Top stats grid ─────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

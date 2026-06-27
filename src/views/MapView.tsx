@@ -174,7 +174,7 @@ export function MapView({ onBossClick }: Props) {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 89px)' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 150px)' }}>
       {/* Dev mode instruction bar */}
       {IS_DEV_MODE && (
         <div className="bg-primary/10 border-b border-primary/30 px-4 py-1.5 shrink-0">
