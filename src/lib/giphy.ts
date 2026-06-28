@@ -23,6 +23,11 @@ export function nextKillQuery(): string {
   return KILL_QUERIES[killIdx++ % KILL_QUERIES.length];
 }
 
+export function randomQuery(type: 'death' | 'kill'): string {
+  const list = type === 'death' ? DEATH_QUERIES : KILL_QUERIES;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
 export async function searchGifs(query: string, limit = 20): Promise<GifData[]> {
   const key = `${query}:${limit}`;
   const hit = cache.get(key);

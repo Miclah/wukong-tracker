@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGifDrawerStore } from '../store/useGifDrawerStore';
 import type { GifData } from '../types';
-import { searchGifs, nextDeathQuery, nextKillQuery, pickRandom } from '../lib/giphy';
+import { searchGifs, randomQuery, pickRandom } from '../lib/giphy';
 import { getFallbackGifs } from '../lib/gifFallback';
+
+const SEARCH_PLACEHOLDER: Record<'death' | 'kill', string> = {
+  death: 'type to summon your sorrow...',
+  kill:  'type to summon your triumph...',
+};
 
 // ── Inner content — re-mounts fresh each time drawer opens ───────────────────
 function DrawerInner({
@@ -14,13 +19,14 @@ function DrawerInner({
   onCommit: (gif: GifData | null, note: string, fightTimeMinutes?: number) => void;
   onClose: () => void;
 }) {
-  const initialQuery          = useRef(type === 'death' ? nextDeathQuery() : nextKillQuery());
-  const [query, setQuery]     = useState(initialQuery.current);
-  const [gifs, setGifs]       = useState<GifData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<GifData | null>(null);
-  const [note, setNote]         = useState('');
-  const [fightTime, setFightTime] = useState('');
+  const [query, setQuery]           = useState('');
+  const [gifs, setGifs]             = useState<GifData[]>([]);
+  const [loading, setLoading]       = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selected, setSelected]     = useState<GifData | null>(null);
+  const [note, setNote]             = useState('');
+  const [fightTime, setFightTime]   = useState('');
+  const [surpriseLoading, setSurpriseLoading] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const innerRef  = useRef<HTMLDivElement>(null);
@@ -53,24 +59,28 @@ function DrawerInner({
     return () => el.removeEventListener('keydown', handleTab);
   }, []);
 
-  // Fetch GIFs whenever query changes
+  // Debounced search — fires 400ms after the user stops typing
   useEffect(() => {
     if (!query.trim()) return;
-    let cancelled = false;
-    setLoading(true);
-    setSelected(null);
-    searchGifs(query)
-      .then((results) => {
-        if (cancelled) return;
-        setGifs(results.length ? results : getFallbackGifs(type));
-        setLoading(false);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setGifs(getFallbackGifs(type));
-        setLoading(false);
-      });
-    return () => { cancelled = true; };
+    const t = setTimeout(() => {
+      setHasSearched(true);
+      setLoading(true);
+      setSelected(null);
+      let cancelled = false;
+      searchGifs(query)
+        .then((results) => {
+          if (cancelled) return;
+          setGifs(results.length ? results : getFallbackGifs(type));
+          setLoading(false);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setGifs(getFallbackGifs(type));
+          setLoading(false);
+        });
+      return () => { cancelled = true; };
+    }, 400);
+    return () => clearTimeout(t);
   }, [query, type]);
 
   function parsedTime(): number | undefined {
@@ -80,6 +90,19 @@ function DrawerInner({
 
   function commit(gif: GifData | null) {
     onCommit(gif, note.trim(), parsedTime());
+  }
+
+  async function handleSurprise() {
+    setSurpriseLoading(true);
+    const q = randomQuery(type);
+    try {
+      const results = await searchGifs(q);
+      const pool = results.length ? results : getFallbackGifs(type);
+      commit(pickRandom(pool));
+    } catch {
+      commit(pickRandom(getFallbackGifs(type)));
+    }
+    // Component unmounts after commit — no need to reset loading
   }
 
   const title         = type === 'death' ? 'Summon Your Sorrow' : 'Summon Your Triumph';
@@ -116,41 +139,52 @@ function DrawerInner({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search GIFs…"
+          placeholder={SEARCH_PLACEHOLDER[type]}
           aria-label="Search GIFs"
           className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
         />
 
-        {/* Grid — 2-col, bigger thumbnails than the old inline picker */}
-        <div className="grid grid-cols-2 gap-2" aria-label="GIF results">
-          {loading
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="aspect-video bg-canvas rounded animate-pulse" />
-              ))
-            : gifs.map((gif, i) => (
-                <button
-                  key={`${gif.thumbnailUrl}-${i}`}
-                  onClick={() => setSelected(gif === selected ? null : gif)}
-                  aria-label={gif.description}
-                  aria-pressed={gif === selected}
-                  className={[
-                    'relative rounded overflow-hidden border-2 transition-colors focus:outline-none aspect-video',
-                    gif === selected
-                      ? 'border-primary'
-                      : 'border-transparent hover:border-primary/40',
-                  ].join(' ')}
-                >
-                  <img
-                    src={gif.thumbnailUrl}
-                    alt={gif.description}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-        </div>
+        {/* GIF grid — only shown after first search */}
+        {hasSearched && (
+          <div className="grid grid-cols-2 gap-2" aria-label="GIF results">
+            {loading
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="aspect-video bg-canvas rounded animate-pulse" />
+                ))
+              : gifs.map((gif, i) => (
+                  <button
+                    key={`${gif.thumbnailUrl}-${i}`}
+                    onClick={() => setSelected(gif === selected ? null : gif)}
+                    aria-label={gif.description}
+                    aria-pressed={gif === selected}
+                    className={[
+                      'relative rounded overflow-hidden border-2 transition-colors focus:outline-none aspect-video',
+                      gif === selected
+                        ? 'border-primary'
+                        : 'border-transparent hover:border-primary/40',
+                    ].join(' ')}
+                  >
+                    <img
+                      src={gif.thumbnailUrl}
+                      alt={gif.description}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+          </div>
+        )}
 
-        {/* Note + fight time */}
+        {/* Empty-state hint — shown before any search */}
+        {!hasSearched && (
+          <p className="font-display-alt italic text-parchment-text-mute text-[0.85rem] text-center py-6 opacity-60">
+            {type === 'death'
+              ? 'Search above, or let fate decide.'
+              : 'Search above, or let victory choose itself.'}
+          </p>
+        )}
+
+        {/* Note + fight time — always visible */}
         <div className="flex gap-2">
           <input
             type="text"
@@ -172,20 +206,23 @@ function DrawerInner({
           />
         </div>
 
-        {/* Actions */}
+        {/* Actions — Attach GIF only appears once results are loaded */}
         <div className="flex gap-2">
+          {hasSearched && (
+            <button
+              onClick={() => commit(selected)}
+              disabled={!selected}
+              className="flex-1 h-10 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Attach GIF
+            </button>
+          )}
           <button
-            onClick={() => commit(selected)}
-            disabled={!selected}
-            className="flex-1 h-10 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={handleSurprise}
+            disabled={surpriseLoading}
+            className="flex-1 h-10 rounded-md border border-hairline font-sans text-btn text-parchment-text-mute hover:bg-canvas transition-colors disabled:opacity-50"
           >
-            Attach GIF
-          </button>
-          <button
-            onClick={() => commit(pickRandom(gifs))}
-            className="px-4 h-10 rounded-md border border-hairline font-sans text-btn text-parchment-text-mute hover:bg-canvas transition-colors"
-          >
-            Surprise me
+            {surpriseLoading ? '…' : 'Surprise me'}
           </button>
           <button
             onClick={() => commit(null)}
