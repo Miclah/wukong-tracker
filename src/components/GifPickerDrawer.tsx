@@ -10,6 +10,9 @@ const SEARCH_PLACEHOLDER: Record<'death' | 'kill', string> = {
   kill:  'type to summon your triumph...',
 };
 
+// Module-level: persists across drawer open/close within the same browser session
+let sessionSearchHistory: string[] = [];
+
 // ── Single GIF cell with ★ favorite overlay ───────────────────────────────────
 function GifCell({
   gif,
@@ -85,6 +88,7 @@ function DrawerInner({
   const [note, setNote]             = useState('');
   const [fightTime, setFightTime]   = useState('');
   const [surpriseLoading, setSurpriseLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(sessionSearchHistory);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const innerRef  = useRef<HTMLDivElement>(null);
@@ -129,6 +133,12 @@ function DrawerInner({
   useEffect(() => {
     if (!query.trim()) return;
     const t = setTimeout(() => {
+      // Record in session history (deduplicated, last 3)
+      const trimmed = query.trim();
+      const updated = [trimmed, ...sessionSearchHistory.filter((s) => s !== trimmed)].slice(0, 3);
+      sessionSearchHistory = updated;
+      setRecentSearches(updated);
+
       setHasSearched(true);
       setLoading(true);
       setSelected(null);
@@ -234,6 +244,21 @@ function DrawerInner({
               aria-label="Search GIFs"
               className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
             />
+
+            {/* Recent search chips */}
+            {recentSearches.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" aria-label="Recent searches">
+                {recentSearches.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setQuery(q)}
+                    className="px-2.5 py-0.5 rounded-full border border-hairline font-sans text-[11px] text-parchment-text-mute hover:border-primary/40 hover:text-parchment-text transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {hasSearched ? (
               <div className="grid grid-cols-2 gap-2" aria-label="GIF results">
