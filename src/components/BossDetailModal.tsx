@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Boss, Difficulty, GifData } from '../types';
+import { InkBlotImage } from './InkBlotImage';
 import { useTrackerStore } from '../store/useTrackerStore';
 import { SealStamp } from './SealStamp';
 import { AttemptTimeline } from './AttemptTimeline';
@@ -252,7 +253,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
         {/* Left column — boss art */}
         <div className="sm:w-[44%] flex-shrink-0 bg-ink-soft relative">
           {boss.imageUrl ? (
-            <img
+            <InkBlotImage
               src={boss.imageUrl}
               alt={boss.name}
               data-boss-id={boss.id}

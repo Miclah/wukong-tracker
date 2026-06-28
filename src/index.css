@@ -148,6 +148,32 @@ html.light .ember-glow {
   }
 }
 
+/* ── Ink-blot image reveal ─────────────────────────────────────────────────── */
+.ink-blot-hidden {
+  opacity: 0;
+  clip-path: circle(0% at 50% 50%);
+}
+
+@keyframes ink-blot-expand {
+  from {
+    opacity: 0.2;
+    clip-path: circle(0% at 50% 50%);
+  }
+  to {
+    opacity: 1;
+    clip-path: circle(120% at 50% 50%);
+  }
+}
+
+.ink-blot-revealed {
+  animation: ink-blot-expand 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-blot-hidden  { opacity: 1; clip-path: none; }
+  .ink-blot-revealed { animation: none; }
+}
+
 @layer base {
   *,
   *::before,

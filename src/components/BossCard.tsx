@@ -1,4 +1,5 @@
 import type { Boss, BossProgress } from '../types'
+import { InkBlotImage } from './InkBlotImage'
 
 interface Props {
   boss: Boss
@@ -72,7 +73,7 @@ export function BossCard({ boss, progress, onClick }: Props) {
     >
       {/* Art */}
       <div className="relative aspect-[3/2] overflow-hidden">
-        <img
+        <InkBlotImage
           src={boss.imageUrl}
           alt=""
           loading="lazy"
