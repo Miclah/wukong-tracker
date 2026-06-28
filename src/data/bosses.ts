@@ -417,6 +417,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/The_Third_Prince',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.45, y: 0.45 },
   },
   {
     id: 'kang-jin-star',
@@ -528,6 +529,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Old_Ginseng_Guai',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.4, y: 0.37 },
   },
   {
     id: 'green-capped-martialist',
@@ -772,6 +774,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Hundred-Eyed_Daoist_Master',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.36, y: 0.14 },
   },
   {
     id: 'the-scorpionlord',
@@ -895,6 +898,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Cloudy_Mist,_Misty_Cloud',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.62, y: 0.42 },
   },
   {
     id: 'misty-cloud',
@@ -931,6 +935,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Yin-Yang_Fish',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.22, y: 0.65 },
   },
   {
     id: 'crimson-silver-cart',
