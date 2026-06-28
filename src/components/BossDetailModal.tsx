@@ -256,7 +256,10 @@ export function BossDetailModal({ boss, onClose }: Props) {
               src={boss.imageUrl}
               alt={boss.name}
               data-boss-id={boss.id}
-              className="w-full h-48 sm:h-full object-cover object-top"
+              className="w-full h-48 sm:h-full object-cover"
+              style={{
+                objectPosition: `${(boss.focalPoint?.x ?? 0.5) * 100}% ${(boss.focalPoint?.y ?? 0.5) * 100}%`,
+              }}
             />
           ) : (
             <div className="w-full h-48 sm:h-full flex items-center justify-center text-parchment-text-mute font-zh text-zh">

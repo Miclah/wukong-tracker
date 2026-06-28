@@ -70,14 +70,17 @@ export function BossCard({ boss, progress, onClick }: Props) {
           : 'bg-parchment hover:bg-parchment-aged hover:-translate-y-0.5 hover:shadow-card-lift',
       ].join(' ')}
     >
-      {/* Art — 16:9 to match downloaded images */}
-      <div className="relative aspect-video overflow-hidden">
+      {/* Art */}
+      <div className="relative aspect-[3/2] overflow-hidden">
         <img
           src={boss.imageUrl}
           alt=""
           loading="lazy"
           data-boss-id={boss.id}
           className="w-full h-full object-cover"
+          style={{
+            objectPosition: `${(boss.focalPoint?.x ?? 0.5) * 100}% ${(boss.focalPoint?.y ?? 0.5) * 100}%`,
+          }}
         />
         {defeated && (
           <div className="absolute bottom-3 right-3 opacity-30 -rotate-3 pointer-events-none">
