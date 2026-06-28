@@ -1,4 +1,5 @@
 import type { Boss, BossProgress } from '../types'
+import { InkBlotImage } from './InkBlotImage'
 
 interface Props {
   boss: Boss
@@ -70,19 +71,29 @@ export function BossCard({ boss, progress, onClick }: Props) {
           : 'bg-parchment hover:bg-parchment-aged hover:-translate-y-0.5 hover:shadow-card-lift',
       ].join(' ')}
     >
-      {/* Art — 16:9 to match downloaded images */}
-      <div className="relative aspect-video overflow-hidden">
-        <img
+      {/* Art */}
+      <div className="relative aspect-[3/2] overflow-hidden">
+        <InkBlotImage
           src={boss.imageUrl}
           alt=""
           loading="lazy"
+          data-boss-id={boss.id}
           className="w-full h-full object-cover"
+          style={{
+            objectPosition: `${(boss.focalPoint?.x ?? 0.5) * 100}% ${(boss.focalPoint?.y ?? 0.5) * 100}%`,
+          }}
         />
         {defeated && (
           <div className="absolute bottom-3 right-3 opacity-30 -rotate-3 pointer-events-none">
             <InlineSeal />
           </div>
         )}
+        {/* Hover hint */}
+        <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+          <span className="font-sans text-[10px] tracking-[0.8px] uppercase text-parchment-text bg-canvas/70 rounded px-1.5 py-0.5">
+            open scroll →
+          </span>
+        </div>
       </div>
 
       {/* Body */}

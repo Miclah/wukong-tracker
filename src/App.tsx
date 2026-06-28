@@ -4,19 +4,20 @@ import { useTrackerStore } from './store/useTrackerStore';
 import { useSharedStore } from './store/useSharedStore';
 import { useSharedStateLoad } from './hooks/useSharedStateLoad';
 import { useAchievementWatcher } from './hooks/useAchievementWatcher';
+import { useHashRoute } from './hooks/useHashRoute';
 import { ChapterTabs } from './components/ChapterTabs';
-import { BossDetailModal } from './components/BossDetailModal';
 import { AchievementToast } from './components/AchievementToast';
 import { BossGridView } from './views/BossGridView';
 import { StatsDashboardView } from './views/StatsDashboardView';
 import { SharedStatsView } from './views/SharedStatsView';
 import { MapView } from './views/MapView';
+import { BossDetailPage } from './views/BossDetailPage';
 import { MountainBackdrop } from './components/atmosphere/MountainBackdrop';
 import { EmberGlow } from './components/atmosphere/EmberGlow';
 import { CalligraphyRain } from './components/atmosphere/CalligraphyRain';
 import { FloatingSeal } from './components/atmosphere/FloatingSeal';
+import { FocalPointPicker } from './components/dev/FocalPointPicker';
 import { PROVERBS } from './data/proverbs';
-import type { Boss } from './types';
 
 type RootTab = 'bosses' | 'tally' | 'map';
 
@@ -43,12 +44,16 @@ function toRoman(n: number): string {
 export default function App() {
   useSharedStateLoad();
   const { current: toastAchievement, dismissToast } = useAchievementWatcher();
+  const { route, navigate } = useHashRoute();
 
   const sharedSummary = useSharedStore((s) => s.sharedSummary);
 
-  const [rootTab, setRootTab] = useState<RootTab>('bosses');
   const [chapter, setChapter] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
-  const [selectedBoss, setSelectedBoss] = useState<Boss | null>(null);
+
+  // Derive section from hash route
+  const bossPageId = route.startsWith('/boss/') ? route.slice(6) : null;
+  const bossForPage = bossPageId ? (bosses.find((b) => b.id === bossPageId) ?? null) : null;
+  const rootTab: RootTab = route === '/tally' ? 'tally' : route === '/map' ? 'map' : 'bosses';
 
   const progress            = useTrackerStore((s) => s.progress);
   const gifPickerEnabled    = useTrackerStore((s) => s.reactionsEnabled);
@@ -200,7 +205,7 @@ export default function App() {
               return (
                 <button
                   key={ch}
-                  onClick={() => { setChapter(ch); setRootTab('bosses'); }}
+                  onClick={() => { setChapter(ch); navigate('/'); }}
                   aria-label={`Chapter ${ch} — ${state}`}
                   title={`Chapter ${ch}`}
                   className={[
@@ -224,63 +229,69 @@ export default function App() {
 
           {/* Root tab row */}
           <div className="flex gap-0 border-t border-hairline-dark" role="tablist" aria-label="Main navigation">
-            {ROOT_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={rootTab === tab.id}
-                onClick={() => setRootTab(tab.id)}
-                className={[
-                  'px-5 py-2.5 font-sans text-[13px] font-semibold tracking-[1.2px] uppercase transition-colors border-b-2',
-                  rootTab === tab.id
-                    ? 'border-primary text-parchment-text'
-                    : 'border-transparent text-parchment-text-mute hover:text-parchment-text',
-                ].join(' ')}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {ROOT_TABS.map((tab) => {
+              const isActive = tab.id === rootTab && !bossForPage;
+              return (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => navigate(tab.id === 'bosses' ? '/' : '/' + tab.id)}
+                  className={[
+                    'px-5 py-2.5 font-sans text-[13px] font-semibold tracking-[1.2px] uppercase transition-colors border-b-2',
+                    isActive
+                      ? 'border-primary text-parchment-text'
+                      : 'border-transparent text-parchment-text-mute hover:text-parchment-text',
+                  ].join(' ')}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>
 
       {/* ── Main content ───────────────────────────────────────── */}
       <main className="flex-1">
-        {rootTab === 'bosses' && (
-          <div className="relative">
-            <FloatingSeal image="/textures/seal-suffering.png" />
-            <div className="bg-canvas-soft border-b border-hairline-dark sticky top-[149px] z-20">
-              <div className="max-w-[1280px] mx-auto px-6 py-3">
-                <ChapterTabs active={chapter} onChange={setChapter} />
+        {bossForPage ? (
+          <BossDetailPage boss={bossForPage} navigate={navigate} />
+        ) : (
+          <>
+            {rootTab === 'bosses' && (
+              <div className="relative">
+                <FloatingSeal image="/textures/seal-suffering.png" />
+                <div className="bg-canvas-soft border-b border-hairline-dark sticky top-[149px] z-20">
+                  <div className="max-w-[1280px] mx-auto px-6 py-3">
+                    <ChapterTabs active={chapter} onChange={setChapter} />
+                  </div>
+                </div>
+                <div className="max-w-[1280px] mx-auto px-6 py-6">
+                  <BossGridView
+                    bosses={visibleBosses}
+                    progress={progress}
+                    onBossClick={(boss) => navigate('/boss/' + boss.id)}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="max-w-[1280px] mx-auto px-6 py-6">
-              <BossGridView
-                bosses={visibleBosses}
-                progress={progress}
-                onBossClick={setSelectedBoss}
-              />
-            </div>
-          </div>
-        )}
+            )}
 
-        {rootTab === 'tally' && (
-          <div className="relative">
-            <FloatingSeal image="/textures/seal-tally.png" />
-            <StatsDashboardView />
-          </div>
-        )}
+            {rootTab === 'tally' && (
+              <div className="relative">
+                <FloatingSeal image="/textures/seal-tally.png" />
+                <StatsDashboardView />
+              </div>
+            )}
 
-        {rootTab === 'map' && (
-          <div className="relative">
-            <FloatingSeal image="/textures/seal-map.png" />
-            <MapView onBossClick={setSelectedBoss} />
-          </div>
+            {rootTab === 'map' && (
+              <div className="relative">
+                <FloatingSeal image="/textures/seal-map.png" />
+                <MapView onBossClick={(boss) => navigate('/boss/' + boss.id)} />
+              </div>
+            )}
+          </>
         )}
       </main>
-
-      {/* ── Boss detail modal ───────────────────────────────────── */}
-      <BossDetailModal boss={selectedBoss} onClose={() => setSelectedBoss(null)} />
 
       {/* ── Achievement toast ───────────────────────────────────── */}
       {toastAchievement && (
@@ -290,6 +301,9 @@ export default function App() {
           onDismiss={dismissToast}
         />
       )}
+
+      {/* ── Dev tools (no-op in production unless ?dev= param present) ── */}
+      <FocalPointPicker />
     </div>
   );
 }
