@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Boss, Difficulty, GifData } from '../types'
+import type { Boss, Difficulty } from '../types'
 import { useTrackerStore } from '../store/useTrackerStore'
+import { useGifDrawerStore } from '../store/useGifDrawerStore'
 import { InkBlotImage } from '../components/InkBlotImage'
 import { InkStrokeRating } from '../components/InkStrokeRating'
 import { SealStamp } from '../components/SealStamp'
-import GifPicker from '../components/GifPicker'
 import { JournalTimeline } from '../components/JournalTimeline'
 
 // ── Inline markdown renderer ─────────────────────────────────────────────────
@@ -96,6 +96,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
   const setBossNotes      = useTrackerStore((s) => s.setBossNotes)
   const setBossDifficulty = useTrackerStore((s) => s.setBossDifficulty)
   const gifPickerEnabled  = useTrackerStore((s) => s.reactionsEnabled)
+  const openDrawer        = useGifDrawerStore((s) => s.openDrawer)
 
   const deathCount = progress?.attempts.filter((a) => a.type === 'death').length ?? 0
   const defeated   = progress?.defeated ?? false
@@ -124,22 +125,54 @@ export function BossDetailPage({ boss, navigate }: Props) {
     if (notesEditing) notesAreaRef.current?.focus()
   }, [notesEditing])
 
-  function handleCommit(gif: GifData | null, noteArg: string, fightTimeMinutes?: number) {
-    const noteVal = noteArg || undefined
-    const gifVal  = gif ?? undefined
+  // Called by the no-GIF inline form (gifPickerEnabled=false path)
+  function handleNoteLog() {
+    const mins    = parseFloat(fightTime)
+    const noteVal = note.trim() || undefined
+    const ft      = mins > 0 ? mins : undefined
     if (activeFlow === 'death') {
-      logAttempt(boss.id, { type: 'death', note: noteVal, gif: gifVal, fightTimeMinutes })
+      logAttempt(boss.id, { type: 'death', note: noteVal, fightTimeMinutes: ft })
     } else if (activeFlow === 'vanquish') {
-      markDefeated(boss.id, { note: noteVal, gif: gifVal, fightTimeMinutes })
+      markDefeated(boss.id, { note: noteVal, fightTimeMinutes: ft })
     }
     setActiveFlow(null)
     setNote('')
     setFightTime('')
   }
 
-  function handleNoteLog() {
-    const mins = parseFloat(fightTime)
-    handleCommit(null, note, mins > 0 ? mins : undefined)
+  function handleDeathClick() {
+    if (gifPickerEnabled) {
+      openDrawer({
+        type: 'death',
+        onCommit: (gif, noteArg, fightTimeMinutes) => {
+          logAttempt(boss.id, {
+            type: 'death',
+            note: noteArg || undefined,
+            gif: gif ?? undefined,
+            fightTimeMinutes,
+          })
+        },
+      })
+    } else {
+      setActiveFlow('death')
+    }
+  }
+
+  function handleVanquishClick() {
+    if (gifPickerEnabled) {
+      openDrawer({
+        type: 'kill',
+        onCommit: (gif, noteArg, fightTimeMinutes) => {
+          markDefeated(boss.id, {
+            note: noteArg || undefined,
+            gif: gif ?? undefined,
+            fightTimeMinutes,
+          })
+        },
+      })
+    } else {
+      setActiveFlow('vanquish')
+    }
   }
 
   const focalStyle = {
@@ -250,56 +283,49 @@ export function BossDetailPage({ boss, navigate }: Props) {
           {/* Action buttons */}
           <div className="mt-6 flex flex-col gap-3">
             {activeFlow ? (
-              gifPickerEnabled ? (
-                <GifPicker
-                  category={activeFlow === 'death' ? 'death' : 'kill'}
-                  onCommit={handleCommit}
-                  onCancel={() => { setActiveFlow(null); setNote(''); setFightTime('') }}
-                />
-              ) : (
-                <div className="flex flex-col gap-2 bg-canvas/30 rounded-md p-3 border border-hairline">
-                  <div className="flex gap-2">
-                    <input
-                      ref={noteInputRef}
-                      type="text"
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleNoteLog() }}
-                      placeholder="What happened… (optional)"
-                      aria-label="Attempt note"
-                      className="flex-1 rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={fightTime}
-                      onChange={(e) => setFightTime(e.target.value)}
-                      placeholder="min"
-                      aria-label="Fight duration in minutes"
-                      className="w-16 rounded-md bg-canvas border border-hairline-dark px-2 py-2 font-mono text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60 text-center"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleNoteLog}
-                      className="flex-1 h-9 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
-                    >
-                      Log
-                    </button>
-                    <button
-                      onClick={() => { setActiveFlow(null); setNote('') }}
-                      className="px-4 h-9 rounded-md font-sans text-btn text-ink-mute hover:bg-parchment-aged transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+              // Non-GIF inline form (only shown when gifPickerEnabled is false)
+              <div className="flex flex-col gap-2 bg-canvas/30 rounded-md p-3 border border-hairline">
+                <div className="flex gap-2">
+                  <input
+                    ref={noteInputRef}
+                    type="text"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleNoteLog() }}
+                    placeholder="What happened… (optional)"
+                    aria-label="Attempt note"
+                    className="flex-1 rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={fightTime}
+                    onChange={(e) => setFightTime(e.target.value)}
+                    placeholder="min"
+                    aria-label="Fight duration in minutes"
+                    className="w-16 rounded-md bg-canvas border border-hairline-dark px-2 py-2 font-mono text-body-md text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60 text-center"
+                  />
                 </div>
-              )
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleNoteLog}
+                    className="flex-1 h-9 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
+                  >
+                    Log
+                  </button>
+                  <button
+                    onClick={() => { setActiveFlow(null); setNote(''); setFightTime('') }}
+                    className="px-4 h-9 rounded-md font-sans text-btn text-ink-mute hover:bg-parchment-aged transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             ) : (
               <>
                 <button
-                  onClick={() => setActiveFlow('death')}
+                  onClick={handleDeathClick}
                   disabled={defeated}
                   aria-label="Log a death"
                   className="h-12 w-full rounded-md border border-primary/40 bg-canvas font-sans text-btn text-parchment-text tracking-[0.3px] transition-colors hover:border-primary/70 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -316,7 +342,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
                   </div>
                 ) : (
                   <button
-                    onClick={() => setActiveFlow('vanquish')}
+                    onClick={handleVanquishClick}
                     aria-label="Mark as vanquished"
                     className="h-12 w-full rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
                   >
