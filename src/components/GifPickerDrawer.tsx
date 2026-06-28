@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useGifDrawerStore } from '../store/useGifDrawerStore';
 import { useTrackerStore } from '../store/useTrackerStore';
 import type { GifData } from '../types';
-import { searchGifs, randomQuery, pickRandom } from '../lib/giphy';
+import { searchGifs, randomQuery, pickRandom, PAGE_SIZE } from '../lib/giphy';
 import { getFallbackGifs } from '../lib/gifFallback';
 
 const SEARCH_PLACEHOLDER: Record<'death' | 'kill', string> = {
@@ -83,12 +83,16 @@ function DrawerInner({
   const [query, setQuery]           = useState('');
   const [gifs, setGifs]             = useState<GifData[]>([]);
   const [loading, setLoading]       = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [hasMore, setHasMore]       = useState(false);
+  const [offset, setOffset]         = useState(0);
   const [selected, setSelected]     = useState<GifData | null>(null);
   const [note, setNote]             = useState('');
   const [fightTime, setFightTime]   = useState('');
   const [surpriseLoading, setSurpriseLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>(sessionSearchHistory);
+  const currentQuery = useRef('');
 
   const searchRef = useRef<HTMLInputElement>(null);
   const innerRef  = useRef<HTMLDivElement>(null);
@@ -139,25 +143,49 @@ function DrawerInner({
       sessionSearchHistory = updated;
       setRecentSearches(updated);
 
+      currentQuery.current = trimmed;
       setHasSearched(true);
       setLoading(true);
       setSelected(null);
+      setOffset(0);
+      setHasMore(false);
       let cancelled = false;
-      searchGifs(query)
+      searchGifs(trimmed, PAGE_SIZE, 0)
         .then((results) => {
           if (cancelled) return;
-          setGifs(results.length ? results : getFallbackGifs(type));
+          const pool = results.length ? results : getFallbackGifs(type);
+          setGifs(pool);
+          setHasMore(results.length === PAGE_SIZE);
           setLoading(false);
         })
         .catch(() => {
           if (cancelled) return;
           setGifs(getFallbackGifs(type));
+          setHasMore(false);
           setLoading(false);
         });
       return () => { cancelled = true; };
     }, 400);
     return () => clearTimeout(t);
   }, [query, type]);
+
+  async function loadMore() {
+    const nextOffset = offset + PAGE_SIZE;
+    setLoadingMore(true);
+    try {
+      const results = await searchGifs(currentQuery.current, PAGE_SIZE, nextOffset);
+      if (results.length) {
+        setGifs((prev) => [...prev, ...results]);
+        setOffset(nextOffset);
+        setHasMore(results.length === PAGE_SIZE);
+      } else {
+        setHasMore(false);
+      }
+    } catch {
+      setHasMore(false);
+    }
+    setLoadingMore(false);
+  }
 
   function parsedTime(): number | undefined {
     const v = parseFloat(fightTime);
@@ -261,22 +289,35 @@ function DrawerInner({
             )}
 
             {hasSearched ? (
-              <div className="grid grid-cols-2 gap-2" aria-label="GIF results">
-                {loading
-                  ? Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="aspect-video bg-canvas rounded animate-pulse" />
-                    ))
-                  : gifs.map((gif, i) => (
-                      <GifCell
-                        key={`${gif.thumbnailUrl}-${i}`}
-                        gif={gif}
-                        isSelected={gif === selected}
-                        isFavorited={isFavorited(gif)}
-                        onSelect={() => setSelected(gif === selected ? null : gif)}
-                        onToggleFavorite={() => toggleFavoriteGif(gif)}
-                      />
-                    ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-2" aria-label="GIF results">
+                  {loading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="aspect-video bg-canvas rounded animate-pulse" />
+                      ))
+                    : gifs.map((gif, i) => (
+                        <GifCell
+                          key={`${gif.thumbnailUrl}-${i}`}
+                          gif={gif}
+                          isSelected={gif === selected}
+                          isFavorited={isFavorited(gif)}
+                          onSelect={() => setSelected(gif === selected ? null : gif)}
+                          onToggleFavorite={() => toggleFavoriteGif(gif)}
+                        />
+                      ))}
+                </div>
+
+                {/* Load more */}
+                {!loading && hasMore && (
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="w-full py-2 font-sans text-[12px] text-parchment-text-mute hover:text-parchment-text border border-hairline rounded-md hover:border-primary/40 transition-colors disabled:opacity-40"
+                  >
+                    {loadingMore ? 'Loading…' : 'Load more'}
+                  </button>
+                )}
+              </>
             ) : (
               <p className="font-display-alt italic text-parchment-text-mute text-[0.85rem] text-center py-6 opacity-60">
                 {type === 'death'
@@ -311,8 +352,10 @@ function DrawerInner({
             </div>
           )
         )}
+      </div>
 
-        {/* Note + fight time — always visible */}
+      {/* Pinned bottom: note + actions — always visible, never scrolls away */}
+      <div className="flex-shrink-0 px-5 pt-3 pb-4 border-t border-hairline flex flex-col gap-3">
         <div className="flex gap-2">
           <input
             type="text"
@@ -333,8 +376,6 @@ function DrawerInner({
             className="w-16 rounded-md bg-canvas border border-hairline-dark px-2 py-2 font-mono text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60 text-center"
           />
         </div>
-
-        {/* Actions */}
         <div className="flex gap-2">
           {selected && (
             <button
@@ -361,7 +402,7 @@ function DrawerInner({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-hairline flex-shrink-0">
+      <div className="px-5 py-2 border-t border-hairline flex-shrink-0">
         <p className="font-sans text-[10px] text-parchment-text-mute opacity-50 text-right">
           Powered by GIPHY
         </p>
