@@ -88,6 +88,12 @@ export function BossCard({ boss, progress, onClick }: Props) {
             <InlineSeal />
           </div>
         )}
+        {/* Hover hint */}
+        <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+          <span className="font-sans text-[10px] tracking-[0.8px] uppercase text-parchment-text bg-canvas/70 rounded px-1.5 py-0.5">
+            open scroll →
+          </span>
+        </div>
       </div>
 
       {/* Body */}
