@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGifDrawerStore } from '../store/useGifDrawerStore';
+import { useTrackerStore } from '../store/useTrackerStore';
 import type { GifData } from '../types';
 import { searchGifs, randomQuery, pickRandom } from '../lib/giphy';
 import { getFallbackGifs } from '../lib/gifFallback';
@@ -8,6 +9,59 @@ const SEARCH_PLACEHOLDER: Record<'death' | 'kill', string> = {
   death: 'type to summon your sorrow...',
   kill:  'type to summon your triumph...',
 };
+
+// ── Single GIF cell with ★ favorite overlay ───────────────────────────────────
+function GifCell({
+  gif,
+  isSelected,
+  isFavorited,
+  onSelect,
+  onToggleFavorite,
+}: {
+  gif: GifData;
+  isSelected: boolean;
+  isFavorited: boolean;
+  onSelect: () => void;
+  onToggleFavorite: () => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
+      aria-label={gif.description}
+      aria-pressed={isSelected}
+      className={[
+        'relative rounded overflow-hidden border-2 transition-colors cursor-pointer group aspect-video',
+        isSelected ? 'border-primary' : 'border-transparent hover:border-primary/40',
+      ].join(' ')}
+    >
+      <img
+        src={gif.thumbnailUrl}
+        alt={gif.description}
+        loading="lazy"
+        className="w-full h-full object-cover"
+      />
+      {/* Star button — invisible until hover, pointer-events-none so overlay doesn't block clicks */}
+      <div className="absolute inset-0 pointer-events-none">
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+          aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+          className={[
+            'absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[13px] transition-all',
+            'opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto',
+            isFavorited
+              ? 'bg-gold/90 text-ink'
+              : 'bg-canvas/80 text-parchment-text-mute hover:text-gold hover:bg-canvas',
+          ].join(' ')}
+        >
+          {isFavorited ? '★' : '☆'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ── Inner content — re-mounts fresh each time drawer opens ───────────────────
 function DrawerInner({
@@ -19,6 +73,10 @@ function DrawerInner({
   onCommit: (gif: GifData | null, note: string, fightTimeMinutes?: number) => void;
   onClose: () => void;
 }) {
+  const favoriteGifs     = useTrackerStore((s) => s.favoriteGifs);
+  const toggleFavoriteGif = useTrackerStore((s) => s.toggleFavoriteGif);
+
+  const [activeTab, setActiveTab]   = useState<'search' | 'favorites'>('search');
   const [query, setQuery]           = useState('');
   const [gifs, setGifs]             = useState<GifData[]>([]);
   const [loading, setLoading]       = useState(false);
@@ -36,6 +94,14 @@ function DrawerInner({
     const t = setTimeout(() => searchRef.current?.focus(), 60);
     return () => clearTimeout(t);
   }, []);
+
+  // Re-focus search when switching to search tab
+  useEffect(() => {
+    if (activeTab === 'search') {
+      const t = setTimeout(() => searchRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [activeTab]);
 
   // Focus trap within drawer
   useEffect(() => {
@@ -102,8 +168,9 @@ function DrawerInner({
     } catch {
       commit(pickRandom(getFallbackGifs(type)));
     }
-    // Component unmounts after commit — no need to reset loading
   }
+
+  const isFavorited = (gif: GifData) => favoriteGifs.some((f) => f.url === gif.url);
 
   const title         = type === 'death' ? 'Summon Your Sorrow' : 'Summon Your Triumph';
   const categoryLabel = type === 'death' ? '受難 · Death' : '受勝 · Victory';
@@ -130,58 +197,94 @@ function DrawerInner({
         </button>
       </div>
 
-      {/* Scrollable body */}
+      {/* Tab nav */}
+      <div className="flex border-b border-hairline flex-shrink-0" role="tablist">
+        {(['search', 'favorites'] as const).map((tab) => (
+          <button
+            key={tab}
+            role="tab"
+            aria-selected={activeTab === tab}
+            onClick={() => setActiveTab(tab)}
+            className={[
+              'flex-1 py-2.5 font-sans text-[12px] font-semibold tracking-[1px] uppercase transition-colors border-b-2',
+              activeTab === tab
+                ? 'border-primary text-parchment-text'
+                : 'border-transparent text-parchment-text-mute hover:text-parchment-text',
+            ].join(' ')}
+          >
+            {tab === 'favorites'
+              ? `Favorites${favoriteGifs.length > 0 ? ` (${favoriteGifs.length})` : ''}`
+              : 'Search'}
+          </button>
+        ))}
+      </div>
+
+      {/* Scrollable tab content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
 
-        {/* Search */}
-        <input
-          ref={searchRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={SEARCH_PLACEHOLDER[type]}
-          aria-label="Search GIFs"
-          className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
-        />
+        {/* ── Search tab ── */}
+        {activeTab === 'search' && (
+          <>
+            <input
+              ref={searchRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={SEARCH_PLACEHOLDER[type]}
+              aria-label="Search GIFs"
+              className="w-full rounded-md bg-canvas border border-hairline-dark px-3 py-2 font-sans text-body-sm text-parchment-text placeholder-ink-faded focus:outline-none focus:border-primary/60"
+            />
 
-        {/* GIF grid — only shown after first search */}
-        {hasSearched && (
-          <div className="grid grid-cols-2 gap-2" aria-label="GIF results">
-            {loading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="aspect-video bg-canvas rounded animate-pulse" />
-                ))
-              : gifs.map((gif, i) => (
-                  <button
-                    key={`${gif.thumbnailUrl}-${i}`}
-                    onClick={() => setSelected(gif === selected ? null : gif)}
-                    aria-label={gif.description}
-                    aria-pressed={gif === selected}
-                    className={[
-                      'relative rounded overflow-hidden border-2 transition-colors focus:outline-none aspect-video',
-                      gif === selected
-                        ? 'border-primary'
-                        : 'border-transparent hover:border-primary/40',
-                    ].join(' ')}
-                  >
-                    <img
-                      src={gif.thumbnailUrl}
-                      alt={gif.description}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-          </div>
+            {hasSearched ? (
+              <div className="grid grid-cols-2 gap-2" aria-label="GIF results">
+                {loading
+                  ? Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="aspect-video bg-canvas rounded animate-pulse" />
+                    ))
+                  : gifs.map((gif, i) => (
+                      <GifCell
+                        key={`${gif.thumbnailUrl}-${i}`}
+                        gif={gif}
+                        isSelected={gif === selected}
+                        isFavorited={isFavorited(gif)}
+                        onSelect={() => setSelected(gif === selected ? null : gif)}
+                        onToggleFavorite={() => toggleFavoriteGif(gif)}
+                      />
+                    ))}
+              </div>
+            ) : (
+              <p className="font-display-alt italic text-parchment-text-mute text-[0.85rem] text-center py-6 opacity-60">
+                {type === 'death'
+                  ? 'Search above, or let fate decide.'
+                  : 'Search above, or let victory choose itself.'}
+              </p>
+            )}
+          </>
         )}
 
-        {/* Empty-state hint — shown before any search */}
-        {!hasSearched && (
-          <p className="font-display-alt italic text-parchment-text-mute text-[0.85rem] text-center py-6 opacity-60">
-            {type === 'death'
-              ? 'Search above, or let fate decide.'
-              : 'Search above, or let victory choose itself.'}
-          </p>
+        {/* ── Favorites tab ── */}
+        {activeTab === 'favorites' && (
+          favoriteGifs.length > 0 ? (
+            <div className="grid grid-cols-2 gap-2" aria-label="Favorite GIFs">
+              {favoriteGifs.map((fav, i) => (
+                <GifCell
+                  key={`${fav.url}-${i}`}
+                  gif={fav}
+                  isSelected={fav.url === selected?.url}
+                  isFavorited={true}
+                  onSelect={() => setSelected(fav.url === selected?.url ? null : fav)}
+                  onToggleFavorite={() => toggleFavoriteGif(fav)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+              <span className="text-[2rem] text-parchment-text-mute opacity-30">☆</span>
+              <p className="font-display-alt italic text-parchment-text-mute text-[0.85rem] opacity-60">
+                No favorites yet. Hover any GIF and tap ★ to save it here.
+              </p>
+            </div>
+          )
         )}
 
         {/* Note + fight time — always visible */}
@@ -206,13 +309,12 @@ function DrawerInner({
           />
         </div>
 
-        {/* Actions — Attach GIF only appears once results are loaded */}
+        {/* Actions */}
         <div className="flex gap-2">
-          {hasSearched && (
+          {selected && (
             <button
               onClick={() => commit(selected)}
-              disabled={!selected}
-              className="flex-1 h-10 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 h-10 rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
             >
               Attach GIF
             </button>
