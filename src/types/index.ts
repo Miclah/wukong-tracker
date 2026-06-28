@@ -19,6 +19,7 @@ export type Boss = {
   mapY: number;
   lore?: string;
   fandomUrl: string;
+  focalPoint?: { x: number; y: number };
 };
 
 export type GifData = {

@@ -76,6 +76,7 @@ export function BossCard({ boss, progress, onClick }: Props) {
           src={boss.imageUrl}
           alt=""
           loading="lazy"
+          data-boss-id={boss.id}
           className="w-full h-full object-cover"
         />
         {defeated && (

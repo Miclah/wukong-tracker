@@ -54,6 +54,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Lingxuzi',
     mapX: 52.4,
     mapY: 53.3,
+    focalPoint: { x: 0.35, y: 0.35 },
   },
   {
     id: 'baw-li-guhh-lang',
@@ -114,6 +115,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Red_Loong',
     mapX: 56.8,
     mapY: 29.9,
+    focalPoint: { x: 0.5, y: 0.55 },
   },
   {
     id: 'black-wind-king',
@@ -138,6 +140,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Black_Bear_Guai',
     mapX: 42.7,
     mapY: 57.8,
+    focalPoint: { x: 0.5, y: 0.3 },
   },
 
   // ── CHAPTER 2 — Yellow Wind Ridge ─────────────────────────────────────────
@@ -165,6 +168,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Earth_Wolf',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.65, y: 0.35 },
   },
   {
     id: 'king-of-flowing-sands',
@@ -273,6 +277,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Tiger_Vanguard',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.5, y: 0.2 },
   },
   {
     id: 'tigers-acolyte',
@@ -297,6 +302,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Mad_Tiger',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.5, y: 0.25 },
   },
   {
     id: 'gore-eye-daoist',
@@ -321,6 +327,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Fuban',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.45, y: 0.28 },
   },
   {
     id: 'black-loong',
@@ -333,6 +340,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Black_Loong',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.5, y: 0.25 },
   },
   {
     id: 'yellow-wind-sage',
@@ -372,6 +380,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Kang-Jin_Loong',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.3, y: 0.5 },
   },
   {
     id: 'captain-lotus-vision',
@@ -420,6 +429,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Kang-Jin_Star',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.5, y: 0.2 },
   },
   {
     id: 'cyan-loong',
@@ -432,6 +442,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Cyan_Loong',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.5, y: 0.25 },
   },
   {
     id: 'apramana-bat',
@@ -456,6 +467,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Chen_Loong',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.5, y: 0.28 },
   },
   {
     id: 'yin-tiger',
@@ -651,6 +663,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Centipede_Guai',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.28, y: 0.55 },
   },
   {
     id: 'buddhas-right-hand',
@@ -1026,6 +1039,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Bishui_Golden-Eyed_Beast',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.58, y: 0.35 },
   },
   {
     id: 'red-boy',
@@ -1089,6 +1103,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Jiao-Loong_of_Waves',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.3, y: 0.3 },
   },
   {
     id: 'lang-baw-baw',
@@ -1113,6 +1128,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Cloudtreading_Deer',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.58, y: 0.22 },
   },
   {
     id: 'gold-armored-rhino',
@@ -1125,6 +1141,7 @@ export const bosses: Boss[] = [
     fandomUrl: 'https://blackmythwukong.fandom.com/wiki/Gold_Armored_Rhino',
     mapX: 0,
     mapY: 0,
+    focalPoint: { x: 0.35, y: 0.52 },
   },
   {
     id: 'feng-tail-general',

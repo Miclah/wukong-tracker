@@ -255,6 +255,7 @@ export function BossDetailModal({ boss, onClose }: Props) {
             <img
               src={boss.imageUrl}
               alt={boss.name}
+              data-boss-id={boss.id}
               className="w-full h-48 sm:h-full object-cover object-top"
             />
           ) : (

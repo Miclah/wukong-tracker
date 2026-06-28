@@ -15,6 +15,7 @@ import { MountainBackdrop } from './components/atmosphere/MountainBackdrop';
 import { EmberGlow } from './components/atmosphere/EmberGlow';
 import { CalligraphyRain } from './components/atmosphere/CalligraphyRain';
 import { FloatingSeal } from './components/atmosphere/FloatingSeal';
+import { FocalPointPicker } from './components/dev/FocalPointPicker';
 import { PROVERBS } from './data/proverbs';
 import type { Boss } from './types';
 
@@ -290,6 +291,9 @@ export default function App() {
           onDismiss={dismissToast}
         />
       )}
+
+      {/* ── Dev tools (no-op in production unless ?dev= param present) ── */}
+      <FocalPointPicker />
     </div>
   );
 }
