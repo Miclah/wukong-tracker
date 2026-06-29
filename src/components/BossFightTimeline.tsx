@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import type { Boss, BossProgress, Attempt } from '../types';
 import { useHashRoute } from '../hooks/useHashRoute';
 
@@ -105,23 +105,54 @@ export function BossFightTimeline({ progress, bosses }: Props) {
           Battle Chronicle
         </h3>
 
-        {/* Chapter filter chips */}
-        <div className="flex gap-1 flex-wrap">
-          {CHAPTERS.map((ch) => (
-            <button
-              key={ch}
-              onClick={() => setChapter(ch)}
-              className={[
-                'px-3 py-1.5 rounded-md font-zh text-[11px] font-semibold tracking-[0.8px] transition-colors',
-                chapter === ch
-                  ? 'bg-parchment-aged text-ink'
-                  : 'text-parchment-text-mute border border-hairline-dark hover:text-parchment-text',
-              ].join(' ')}
-              aria-pressed={chapter === ch}
-            >
-              {CHAPTER_LABELS[ch]}
-            </button>
-          ))}
+        {/* Chapter filter — ink-stroke tabs */}
+        <div className="flex items-center flex-wrap gap-y-1" role="tablist" aria-label="Filter by chapter">
+          {CHAPTERS.map((ch, i) => {
+            const isActive = chapter === ch;
+            return (
+              <Fragment key={ch}>
+                {i > 0 && (
+                  <span aria-hidden="true" className="mx-2 text-hairline select-none text-[12px]">·</span>
+                )}
+                <button
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setChapter(ch)}
+                  className="relative flex flex-col items-center pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
+                >
+                  <span
+                    className={`font-zh text-[13px] tracking-[0.5px] transition-colors duration-150 ${
+                      isActive
+                        ? 'text-parchment-text'
+                        : 'text-parchment-text-mute hover:text-parchment-text'
+                    }`}
+                  >
+                    {CHAPTER_LABELS[ch]}
+                  </span>
+                  {/* Brush-stroke SVG underline — only rendered when active */}
+                  <span className="absolute bottom-0 left-0 right-0" style={{ height: 6 }} aria-hidden="true">
+                    {isActive && (
+                      <svg
+                        width="100%"
+                        height="6"
+                        viewBox="0 0 60 6"
+                        preserveAspectRatio="none"
+                        className="brush-stroke-in"
+                      >
+                        <path
+                          d="M0,4.5 C8,1.5 20,5.5 30,3 C40,0.5 52,5 60,3.5"
+                          stroke="#c4453a"
+                          strokeWidth="2.5"
+                          fill="none"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </Fragment>
+            );
+          })}
         </div>
       </div>
 
