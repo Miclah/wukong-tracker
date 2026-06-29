@@ -23,12 +23,19 @@ export function nextKillQuery(): string {
   return KILL_QUERIES[killIdx++ % KILL_QUERIES.length];
 }
 
-export async function searchGifs(query: string, limit = 20): Promise<GifData[]> {
-  const key = `${query}:${limit}`;
+export function randomQuery(type: 'death' | 'kill'): string {
+  const list = type === 'death' ? DEATH_QUERIES : KILL_QUERIES;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+export const PAGE_SIZE = 20;
+
+export async function searchGifs(query: string, limit = PAGE_SIZE, offset = 0): Promise<GifData[]> {
+  const key = `${query}:${limit}:${offset}`;
   const hit = cache.get(key);
   if (hit && Date.now() < hit.expiresAt) return hit.data;
 
-  const { data } = await gf.search(query, { limit, type: 'gifs' });
+  const { data } = await gf.search(query, { limit, offset, type: 'gifs' });
   const gifs: GifData[] = data.map((gif) => ({
     url: gif.images.fixed_height.url,
     thumbnailUrl: gif.images.fixed_height_small.url,

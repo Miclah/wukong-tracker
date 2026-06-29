@@ -17,6 +17,7 @@ import { EmberGlow } from './components/atmosphere/EmberGlow';
 import { CalligraphyRain } from './components/atmosphere/CalligraphyRain';
 import { FloatingSeal } from './components/atmosphere/FloatingSeal';
 import { FocalPointPicker } from './components/dev/FocalPointPicker';
+import GifPickerDrawer from './components/GifPickerDrawer';
 import { PROVERBS } from './data/proverbs';
 
 type RootTab = 'bosses' | 'tally' | 'map';
@@ -304,6 +305,9 @@ export default function App() {
 
       {/* ── Dev tools (no-op in production unless ?dev= param present) ── */}
       <FocalPointPicker />
+
+      {/* ── GIF picker drawer — mounted at root so it overlays any route ── */}
+      <GifPickerDrawer />
     </div>
   );
 }

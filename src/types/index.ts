@@ -50,12 +50,20 @@ export type BossProgress = {
   difficulty?: Difficulty;
 };
 
+export type FavoriteGif = {
+  url: string;
+  thumbnailUrl: string;
+  description: string;
+  addedAt: number;
+};
+
 export type TrackerState = {
   progress: Record<string, BossProgress>;
   reactionsEnabled: boolean;
   unlockedAchievements: string[];
   theme: 'dark' | 'light';
   lastBackupAt: number | null;
+  favoriteGifs: FavoriteGif[];
 };
 
 export type TrackerActions = {
@@ -69,4 +77,5 @@ export type TrackerActions = {
   unlockAchievement: (achievementId: string) => void;
   setTheme: (theme: 'dark' | 'light') => void;
   setLastBackupAt: (ts: number) => void;
+  toggleFavoriteGif: (gif: GifData) => void;
 };

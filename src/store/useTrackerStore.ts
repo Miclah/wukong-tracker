@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Attempt, BossProgress, Difficulty, TrackerActions, TrackerState } from '../types';
+import type { Attempt, BossProgress, Difficulty, FavoriteGif, GifData, TrackerActions, TrackerState } from '../types';
 
 const STORAGE_KEY = 'wukong-tracker-v1';
 
@@ -34,6 +34,7 @@ export const useTrackerStore = create<Store>()(
       unlockedAchievements: [],
       theme: 'dark',
       lastBackupAt: null,
+      favoriteGifs: [],
 
       logAttempt(bossId, partial) {
         const attempt: Attempt = {
@@ -129,6 +130,22 @@ export const useTrackerStore = create<Store>()(
 
       setLastBackupAt(ts) {
         set({ lastBackupAt: ts });
+      },
+
+      toggleFavoriteGif(gif: GifData) {
+        set((state) => {
+          const idx = state.favoriteGifs.findIndex((f: FavoriteGif) => f.url === gif.url);
+          if (idx >= 0) {
+            return { favoriteGifs: state.favoriteGifs.filter((_: FavoriteGif, i: number) => i !== idx) };
+          }
+          const entry: FavoriteGif = {
+            url: gif.url,
+            thumbnailUrl: gif.thumbnailUrl,
+            description: gif.description,
+            addedAt: Date.now(),
+          };
+          return { favoriteGifs: [...state.favoriteGifs, entry] };
+        });
       },
 
       restoreFromBackup(progress, unlockedAchievements) {
