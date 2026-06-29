@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Boss, BossProgress, Attempt } from '../types';
+import { useHashRoute } from '../hooks/useHashRoute';
 
 type FeedEntry = Attempt & { boss: Boss };
 
@@ -82,6 +83,7 @@ function KillDot() {
 
 export function BossFightTimeline({ progress, bosses }: Props) {
   const [chapter, setChapter] = useState<ChapterFilter>(0);
+  const { navigate } = useHashRoute();
 
   const filteredBosses = chapter === 0 ? bosses : bosses.filter((b) => b.chapter === chapter);
 
@@ -160,34 +162,71 @@ export function BossFightTimeline({ progress, bosses }: Props) {
                         {/* Dot on the rail */}
                         {isDeath ? <DeathDot /> : <KillDot />}
 
-                        <div className="min-w-0">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span
-                              className={`font-display text-[13px] font-medium tracking-[0.3px] ${
-                                isDeath ? 'text-primary' : 'text-jade'
-                              }`}
-                            >
-                              {isDeath ? 'DEATH' : 'VANQUISHED'}
-                              {' · '}
-                              <span className="text-parchment-text">{entry.boss.name}</span>
-                            </span>
-                            <span className="font-mono text-[11px] text-parchment-text-mute flex-shrink-0">
-                              {relativeTime(entry.timestamp)}
-                            </span>
+                        {/* Large entry card */}
+                        <div className="bg-canvas-warm border border-hairline-dark rounded-lg p-4 min-w-0">
+                          {/* Card top row: thumbnail + meta | GIF */}
+                          <div className="flex gap-4">
+                            {/* Left: thumbnail + info */}
+                            <div className="flex gap-3 flex-1 min-w-0">
+                              {/* Boss thumbnail 60×60 */}
+                              <img
+                                src={entry.boss.imageUrl}
+                                alt={entry.boss.name}
+                                className="w-[60px] h-[60px] rounded-lg object-cover flex-shrink-0 border border-hairline-dark"
+                                style={{
+                                  objectPosition: entry.boss.focalPoint
+                                    ? `${entry.boss.focalPoint.x * 100}% ${entry.boss.focalPoint.y * 100}%`
+                                    : 'center',
+                                }}
+                              />
+                              {/* Name + type + time */}
+                              <div className="min-w-0 flex flex-col justify-center gap-0.5">
+                                <button
+                                  onClick={() => navigate(`/boss/${entry.boss.id}`)}
+                                  className={`font-display text-[14px] font-semibold tracking-[0.3px] text-left hover:underline ${
+                                    isDeath ? 'text-primary' : 'text-jade'
+                                  }`}
+                                >
+                                  {entry.boss.name}
+                                </button>
+                                <span className="font-zh text-[11px] text-parchment-text-mute">
+                                  {entry.boss.nameZh}
+                                </span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span
+                                    className={`font-sans text-[10px] font-bold uppercase tracking-[1.4px] px-1.5 py-0.5 rounded ${
+                                      isDeath
+                                        ? 'bg-primary/15 text-primary'
+                                        : 'bg-jade/15 text-jade'
+                                    }`}
+                                  >
+                                    {isDeath ? 'Death' : 'Vanquished'}
+                                  </span>
+                                  <span className="font-mono text-[11px] text-parchment-text-mute">
+                                    {relativeTime(entry.timestamp)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right: GIF */}
+                            {entry.gif && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={entry.gif.url}
+                                  alt={entry.gif.description}
+                                  className="rounded-md object-cover"
+                                  style={{ minWidth: 280, minHeight: 160, maxWidth: 320, maxHeight: 200 }}
+                                />
+                              </div>
+                            )}
                           </div>
 
+                          {/* Note below, full width */}
                           {entry.note && (
-                            <p className="font-display-alt italic text-[13px] text-parchment-text-mute mt-1 leading-snug">
+                            <p className="font-display-alt italic text-[13px] text-parchment-text-mute mt-3 leading-relaxed border-t border-hairline-dark pt-3">
                               {entry.note}
                             </p>
-                          )}
-
-                          {entry.gif && (
-                            <img
-                              src={entry.gif.thumbnailUrl}
-                              alt={entry.gif.description}
-                              className="mt-2 rounded max-h-16 object-cover"
-                            />
                           )}
                         </div>
                       </li>
