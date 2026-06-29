@@ -78,6 +78,18 @@ export function buildShareUrl(encoded: string): string {
   return url.toString();
 }
 
+/** Build a share URL that references a GitHub Gist by ID via `?gist=`. */
+export function buildGistUrl(gistId: string): string {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('gist', gistId);
+  return url.toString();
+}
+
+/** Safe URL length threshold for inline ?s= sharing (Chrome limit ~2MB, conservative here). */
+export const SHARE_URL_LIMIT = 28_000;
+
 /**
  * Encode the full playthrough state into a compressed URI-safe string.
  * The resulting string is meant for `?s=` query param via `buildShareUrl`.

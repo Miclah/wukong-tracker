@@ -1,12 +1,16 @@
 import { useEffect } from 'react';
 import { decodeState, decodeShareState } from '../lib/share';
+import { fetchGist } from '../lib/gist';
 import { useSharedStore } from '../store/useSharedStore';
 
 /**
- * On mount, reads the `?s=` URL param. If present:
- * - v2 payload (full state) → stored in sharedPayload, isReadOnly set to true.
- * - v1 payload (summary only) → stored in sharedSummary for legacy SharedStatsView.
- * Never touches the user's localStorage data.
+ * On mount, reads share params from the URL:
+ * - `?s=<encoded>` — inline lz-string payload (v2 full or v1 summary)
+ * - `?gist=<id>` — large payload stored in a public GitHub Gist
+ *
+ * v2 payload sets isReadOnly=true and loads full data into sharedPayload.
+ * v1 payload loads into sharedSummary for the legacy SharedStatsView.
+ * Never touches the user's own localStorage data.
  */
 export function useSharedStateLoad(): void {
   const setSharedPayload = useSharedStore((s) => s.setSharedPayload);
@@ -14,18 +18,29 @@ export function useSharedStateLoad(): void {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const encoded = params.get('s');
-    if (!encoded) return;
 
-    const v2 = decodeState(encoded);
-    if (v2) {
-      setSharedPayload(v2);
-      return;
+    async function tryLoad() {
+      let encoded: string | null = params.get('s');
+
+      if (!encoded) {
+        const gistId = params.get('gist');
+        if (!gistId) return;
+        encoded = await fetchGist(gistId);
+        if (!encoded) return;
+      }
+
+      const v2 = decodeState(encoded);
+      if (v2) {
+        setSharedPayload(v2);
+        return;
+      }
+
+      const v1 = decodeShareState(encoded);
+      if (v1) {
+        setSharedSummary(v1);
+      }
     }
 
-    const v1 = decodeShareState(encoded);
-    if (v1) {
-      setSharedSummary(v1);
-    }
+    void tryLoad();
   }, [setSharedPayload, setSharedSummary]);
 }
