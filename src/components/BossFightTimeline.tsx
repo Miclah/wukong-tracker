@@ -9,7 +9,7 @@ type Props = {
 };
 
 const CHAPTERS = [0, 1, 2, 3, 4, 5, 6] as const;
-type ChapterFilter = (typeof CHAPTERS)[number]; // 0 = All
+type ChapterFilter = (typeof CHAPTERS)[number];
 
 const CHAPTER_LABELS: Record<number, string> = {
   0: 'All',
@@ -21,43 +21,62 @@ const CHAPTER_LABELS: Record<number, string> = {
   6: '第六回',
 };
 
+function dateLabel(ts: number): string {
+  const now = new Date();
+  const d = new Date(ts);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const diff = todayStart - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round(diff / 86_400_000);
+
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return d.toLocaleDateString(undefined, { weekday: 'long' });
+  return d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+}
+
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60_000);
   const hours = Math.floor(diff / 3_600_000);
   const days = Math.floor(diff / 86_400_000);
   if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 60) return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function DeathIcon() {
+function groupByDate(entries: FeedEntry[]): { label: string; key: string; entries: FeedEntry[] }[] {
+  const groups: Map<string, FeedEntry[]> = new Map();
+  for (const e of entries) {
+    const label = dateLabel(e.timestamp);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(e);
+  }
+  return Array.from(groups.entries()).map(([label, entries]) => ({
+    label,
+    key: label,
+    entries,
+  }));
+}
+
+function DeathDot() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="flex-shrink-0 mt-0.5">
-      <circle cx="8" cy="8" r="7" fill="#c4453a" opacity="0.15" />
-      <circle cx="8" cy="7" r="3.5" fill="#c4453a" opacity="0.7" />
-      <rect x="5.5" y="9.5" width="2" height="2" rx="0.5" fill="#c4453a" opacity="0.5" />
-      <rect x="8.5" y="9.5" width="2" height="2" rx="0.5" fill="#c4453a" opacity="0.5" />
-    </svg>
+    <div
+      aria-hidden="true"
+      className="absolute w-3 h-3 rounded-full bg-primary border-2 border-primary"
+      style={{ left: 44, top: 14 }}
+    />
   );
 }
 
-function KillIcon() {
+function KillDot() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="flex-shrink-0 mt-0.5">
-      <circle cx="8" cy="8" r="7" fill="#5a8a6e" opacity="0.15" />
-      <polyline
-        points="4.5,8.5 7,11 11.5,5"
-        stroke="#5a8a6e"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.85"
-      />
-    </svg>
+    <div
+      aria-hidden="true"
+      className="absolute w-3 h-3 rounded-full bg-jade border-2 border-jade"
+      style={{ left: 44, top: 14 }}
+    />
   );
 }
 
@@ -74,6 +93,8 @@ export function BossFightTimeline({ progress, bosses }: Props) {
 
   feed.sort((a, b) => b.timestamp - a.timestamp);
 
+  const groups = groupByDate(feed);
+
   return (
     <div className="bg-surface-dark-card border border-hairline-dark rounded-lg overflow-hidden">
       {/* Header */}
@@ -82,18 +103,19 @@ export function BossFightTimeline({ progress, bosses }: Props) {
           Battle Chronicle
         </h3>
 
-        {/* Chapter filter tabs */}
+        {/* Chapter filter chips */}
         <div className="flex gap-1 flex-wrap">
           {CHAPTERS.map((ch) => (
             <button
               key={ch}
               onClick={() => setChapter(ch)}
               className={[
-                'px-3 py-1.5 rounded-md font-sans text-[11px] font-semibold tracking-[1.2px] uppercase transition-colors',
+                'px-3 py-1.5 rounded-md font-zh text-[11px] font-semibold tracking-[0.8px] transition-colors',
                 chapter === ch
                   ? 'bg-parchment-aged text-ink'
                   : 'text-parchment-text-mute border border-hairline-dark hover:text-parchment-text',
               ].join(' ')}
+              aria-pressed={chapter === ch}
             >
               {CHAPTER_LABELS[ch]}
             </button>
@@ -101,52 +123,81 @@ export function BossFightTimeline({ progress, bosses }: Props) {
         </div>
       </div>
 
-      {/* Feed */}
+      {/* Timeline body */}
       {feed.length === 0 ? (
-        <p className="px-6 py-8 font-sans text-[13px] text-parchment-text-mute italic">
-          No attempts logged yet. Start fighting.
+        <p className="px-6 py-10 font-display-alt italic text-[14px] text-parchment-text-mute">
+          No tale yet told. The mountain awaits your first defeat.
         </p>
       ) : (
-        <ol className="divide-y divide-hairline-dark max-h-[520px] overflow-y-auto" aria-label="Boss fight chronicle">
-          {feed.map((entry, i) => {
-            const isDeath = entry.type === 'death';
-            return (
-              <li key={`${entry.id}-${i}`} className="flex gap-3 px-6 py-3">
-                {isDeath ? <DeathIcon /> : <KillIcon />}
+        <div className="px-6 pb-8 max-h-[620px] overflow-y-auto" aria-label="Boss fight chronicle">
+          {groups.map((group, gi) => (
+            <div key={group.key}>
+              {/* Date header — sits above the rail, full width */}
+              <div className={`${gi === 0 ? 'pt-6' : 'pt-2'} pb-3 flex items-center gap-3`}>
+                <span className="font-sans text-[11px] uppercase tracking-[1.8px] text-parchment-text-mute select-none">
+                  {group.label}
+                </span>
+                <div className="flex-1 h-px bg-hairline-dark" />
+              </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span
-                      className={`font-display text-[13px] font-medium tracking-[0.3px] ${
-                        isDeath ? 'text-primary' : 'text-jade'
-                      }`}
-                    >
-                      {isDeath ? 'Died to' : 'Vanquished'}{' '}
-                      <span className="text-parchment-text">{entry.boss.name}</span>
-                    </span>
-                    <span className="font-sans text-[12px] text-parchment-text-mute flex-shrink-0">
-                      {relativeTime(entry.timestamp)}
-                    </span>
-                  </div>
+              {/* Entries with rail */}
+              <div className="relative">
+                {/* Vermillion rail — 2px, runs the full height of this group's entries */}
+                <div
+                  aria-hidden="true"
+                  className="absolute top-0 bottom-0 w-[2px] bg-primary opacity-50"
+                  style={{ left: 50 }}
+                />
 
-                  {entry.note && (
-                    <p className="font-sans text-[13px] text-parchment-text-mute mt-0.5 leading-snug">
-                      {entry.note}
-                    </p>
-                  )}
+                <ol className="space-y-0">
+                  {group.entries.map((entry) => {
+                    const isDeath = entry.type === 'death';
+                    return (
+                      <li
+                        key={entry.id}
+                        className="relative pl-[72px] py-3"
+                      >
+                        {/* Dot on the rail */}
+                        {isDeath ? <DeathDot /> : <KillDot />}
 
-                  {entry.gif && (
-                    <img
-                      src={entry.gif.thumbnailUrl}
-                      alt={entry.gif.description}
-                      className="mt-1.5 rounded-sm max-h-16 object-cover"
-                    />
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+                        <div className="min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span
+                              className={`font-display text-[13px] font-medium tracking-[0.3px] ${
+                                isDeath ? 'text-primary' : 'text-jade'
+                              }`}
+                            >
+                              {isDeath ? 'DEATH' : 'VANQUISHED'}
+                              {' · '}
+                              <span className="text-parchment-text">{entry.boss.name}</span>
+                            </span>
+                            <span className="font-mono text-[11px] text-parchment-text-mute flex-shrink-0">
+                              {relativeTime(entry.timestamp)}
+                            </span>
+                          </div>
+
+                          {entry.note && (
+                            <p className="font-display-alt italic text-[13px] text-parchment-text-mute mt-1 leading-snug">
+                              {entry.note}
+                            </p>
+                          )}
+
+                          {entry.gif && (
+                            <img
+                              src={entry.gif.thumbnailUrl}
+                              alt={entry.gif.description}
+                              className="mt-2 rounded max-h-16 object-cover"
+                            />
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
