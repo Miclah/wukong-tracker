@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect, useRef, useCallback } from 'react';
 import type { Boss, BossProgress, Attempt } from '../types';
 import { useHashRoute } from '../hooks/useHashRoute';
 
@@ -8,6 +8,8 @@ type Props = {
   progress: Record<string, BossProgress>;
   bosses: Boss[];
 };
+
+const PAGE_SIZE = 50;
 
 const CHAPTERS = [0, 1, 2, 3, 4, 5, 6] as const;
 type ChapterFilter = (typeof CHAPTERS)[number];
@@ -83,7 +85,10 @@ function KillDot() {
 
 export function BossFightTimeline({ progress, bosses }: Props) {
   const [chapter, setChapter] = useState<ChapterFilter>(0);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const { navigate } = useHashRoute();
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
 
   const filteredBosses = chapter === 0 ? bosses : bosses.filter((b) => b.chapter === chapter);
 
@@ -95,10 +100,37 @@ export function BossFightTimeline({ progress, bosses }: Props) {
 
   feed.sort((a, b) => b.timestamp - a.timestamp);
 
-  const groups = groupByDate(feed);
+  const visibleFeed = feed.slice(0, visibleCount);
+  const hasMore = visibleCount < feed.length;
+  const groups = groupByDate(visibleFeed);
+
+  // Reset pagination when chapter filter changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [chapter]);
+
+  // IntersectionObserver: load next page when sentinel comes into view
+  const loadMore = useCallback(() => {
+    if (hasMore) setVisibleCount((c) => c + PAGE_SIZE);
+  }, [hasMore]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: '200px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  function jumpToStart() {
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
-    <div className="bg-surface-dark-card border border-hairline-dark rounded-lg overflow-hidden">
+    <div className="bg-surface-dark-card border border-hairline-dark rounded-lg overflow-hidden" ref={topRef}>
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-hairline-dark">
         <h3 className="font-display text-[22px] font-medium tracking-[0.3px] text-parchment-text mb-4">
@@ -129,7 +161,6 @@ export function BossFightTimeline({ progress, bosses }: Props) {
                   >
                     {CHAPTER_LABELS[ch]}
                   </span>
-                  {/* Brush-stroke SVG underline — only rendered when active */}
                   <span className="absolute bottom-0 left-0 right-0" style={{ height: 6 }} aria-hidden="true">
                     {isActive && (
                       <svg
@@ -154,6 +185,13 @@ export function BossFightTimeline({ progress, bosses }: Props) {
             );
           })}
         </div>
+
+        {/* Entry count */}
+        {feed.length > 0 && (
+          <p className="mt-3 font-mono text-[11px] text-parchment-text-mute">
+            {visibleFeed.length} of {feed.length} entries
+          </p>
+        )}
       </div>
 
       {/* Timeline body */}
@@ -162,10 +200,10 @@ export function BossFightTimeline({ progress, bosses }: Props) {
           No tale yet told. The mountain awaits your first defeat.
         </p>
       ) : (
-        <div className="px-6 pb-8 max-h-[620px] overflow-y-auto" aria-label="Boss fight chronicle">
+        <div className="px-6 pb-8" aria-label="Boss fight chronicle">
           {groups.map((group, gi) => (
             <div key={group.key}>
-              {/* Date header — sits above the rail, full width */}
+              {/* Date header */}
               <div className={`${gi === 0 ? 'pt-6' : 'pt-2'} pb-3 flex items-center gap-3`}>
                 <span className="font-sans text-[11px] uppercase tracking-[1.8px] text-parchment-text-mute select-none">
                   {group.label}
@@ -175,7 +213,6 @@ export function BossFightTimeline({ progress, bosses }: Props) {
 
               {/* Entries with rail */}
               <div className="relative">
-                {/* Vermillion rail — 2px, runs the full height of this group's entries */}
                 <div
                   aria-hidden="true"
                   className="absolute top-0 bottom-0 w-[2px] bg-primary opacity-50"
@@ -186,20 +223,12 @@ export function BossFightTimeline({ progress, bosses }: Props) {
                   {group.entries.map((entry) => {
                     const isDeath = entry.type === 'death';
                     return (
-                      <li
-                        key={entry.id}
-                        className="relative pl-[72px] py-3"
-                      >
-                        {/* Dot on the rail */}
+                      <li key={entry.id} className="relative pl-[72px] py-3">
                         {isDeath ? <DeathDot /> : <KillDot />}
 
-                        {/* Large entry card */}
                         <div className="bg-canvas-warm border border-hairline-dark rounded-lg p-4 min-w-0">
-                          {/* Card top row: thumbnail + meta | GIF */}
                           <div className="flex gap-4">
-                            {/* Left: thumbnail + info */}
                             <div className="flex gap-3 flex-1 min-w-0">
-                              {/* Boss thumbnail 60×60 */}
                               <img
                                 src={entry.boss.imageUrl}
                                 alt={entry.boss.name}
@@ -210,7 +239,6 @@ export function BossFightTimeline({ progress, bosses }: Props) {
                                     : 'center',
                                 }}
                               />
-                              {/* Name + type + time */}
                               <div className="min-w-0 flex flex-col justify-center gap-0.5">
                                 <button
                                   onClick={() => navigate(`/boss/${entry.boss.id}`)}
@@ -240,7 +268,6 @@ export function BossFightTimeline({ progress, bosses }: Props) {
                               </div>
                             </div>
 
-                            {/* Right: GIF */}
                             {entry.gif && (
                               <div className="flex-shrink-0">
                                 <img
@@ -253,7 +280,6 @@ export function BossFightTimeline({ progress, bosses }: Props) {
                             )}
                           </div>
 
-                          {/* Note below, full width */}
                           {entry.note && (
                             <p className="font-display-alt italic text-[13px] text-parchment-text-mute mt-3 leading-relaxed border-t border-hairline-dark pt-3">
                               {entry.note}
@@ -267,6 +293,28 @@ export function BossFightTimeline({ progress, bosses }: Props) {
               </div>
             </div>
           ))}
+
+          {/* Sentinel for infinite scroll */}
+          <div ref={sentinelRef} aria-hidden="true" className="h-1" />
+
+          {/* Bottom controls */}
+          <div className="mt-6 flex items-center justify-between">
+            {hasMore ? (
+              <p className="font-sans text-[12px] text-parchment-text-mute italic">
+                Scroll for more…
+              </p>
+            ) : (
+              <p className="font-sans text-[12px] text-parchment-text-mute italic">
+                All {feed.length} entries shown.
+              </p>
+            )}
+            <button
+              onClick={jumpToStart}
+              className="font-sans text-[12px] text-parchment-text-mute hover:text-parchment-text underline underline-offset-2 transition-colors"
+            >
+              ↑ Jump to start
+            </button>
+          </div>
         </div>
       )}
     </div>
