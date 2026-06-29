@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Attempt, BossProgress, Difficulty, FavoriteGif, GifData, TrackerActions, TrackerState } from '../types';
+import { useSharedStore } from './useSharedStore';
+
+function isReadOnly() {
+  return useSharedStore.getState().isReadOnly;
+}
 
 const STORAGE_KEY = 'wukong-tracker-v1';
 
@@ -37,6 +42,7 @@ export const useTrackerStore = create<Store>()(
       favoriteGifs: [],
 
       logAttempt(bossId, partial) {
+        if (isReadOnly()) return;
         const attempt: Attempt = {
           id: crypto.randomUUID(),
           timestamp: Date.now(),
@@ -54,6 +60,7 @@ export const useTrackerStore = create<Store>()(
       },
 
       markDefeated(bossId, options) {
+        if (isReadOnly()) return;
         set((state) => {
           const prev = getOrInit(state.progress, bossId);
           const killAttempt: Attempt = {
@@ -80,6 +87,7 @@ export const useTrackerStore = create<Store>()(
       },
 
       resetBoss(bossId) {
+        if (isReadOnly()) return;
         set((state) => ({
           progress: {
             ...state.progress,
@@ -89,6 +97,7 @@ export const useTrackerStore = create<Store>()(
       },
 
       setBossNotes(bossId, notes) {
+        if (isReadOnly()) return;
         set((state) => {
           const prev = getOrInit(state.progress, bossId);
           return {
@@ -101,6 +110,7 @@ export const useTrackerStore = create<Store>()(
       },
 
       setBossDifficulty(bossId, difficulty: Difficulty) {
+        if (isReadOnly()) return;
         set((state) => {
           const prev = getOrInit(state.progress, bossId);
           return {
@@ -113,10 +123,12 @@ export const useTrackerStore = create<Store>()(
       },
 
       setReactionsEnabled(enabled) {
+        if (isReadOnly()) return;
         set({ reactionsEnabled: enabled });
       },
 
       unlockAchievement(achievementId) {
+        if (isReadOnly()) return;
         set((state) => ({
           unlockedAchievements: state.unlockedAchievements.includes(achievementId)
             ? state.unlockedAchievements
@@ -125,14 +137,17 @@ export const useTrackerStore = create<Store>()(
       },
 
       setTheme(theme) {
+        if (isReadOnly()) return;
         set({ theme });
       },
 
       setLastBackupAt(ts) {
+        if (isReadOnly()) return;
         set({ lastBackupAt: ts });
       },
 
       toggleFavoriteGif(gif: GifData) {
+        if (isReadOnly()) return;
         set((state) => {
           const idx = state.favoriteGifs.findIndex((f: FavoriteGif) => f.url === gif.url);
           if (idx >= 0) {
@@ -149,6 +164,7 @@ export const useTrackerStore = create<Store>()(
       },
 
       restoreFromBackup(progress, unlockedAchievements) {
+        if (isReadOnly()) return;
         set({ progress, unlockedAchievements, lastBackupAt: Date.now() });
       },
     }),

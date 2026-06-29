@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
-import { decodeShareState } from '../lib/share';
+import { decodeState, decodeShareState } from '../lib/share';
 import { useSharedStore } from '../store/useSharedStore';
 
 /**
- * On mount, reads the `?s=` URL param. If valid, decodes the shared summary
- * and stores it in useSharedStore. Never touches the user's localStorage data.
+ * On mount, reads the `?s=` URL param. If present:
+ * - v2 payload (full state) → stored in sharedPayload, isReadOnly set to true.
+ * - v1 payload (summary only) → stored in sharedSummary for legacy SharedStatsView.
+ * Never touches the user's localStorage data.
  */
 export function useSharedStateLoad(): void {
+  const setSharedPayload = useSharedStore((s) => s.setSharedPayload);
   const setSharedSummary = useSharedStore((s) => s.setSharedSummary);
 
   useEffect(() => {
@@ -14,9 +17,15 @@ export function useSharedStateLoad(): void {
     const encoded = params.get('s');
     if (!encoded) return;
 
-    const summary = decodeShareState(encoded);
-    if (summary) {
-      setSharedSummary(summary);
+    const v2 = decodeState(encoded);
+    if (v2) {
+      setSharedPayload(v2);
+      return;
     }
-  }, [setSharedSummary]);
+
+    const v1 = decodeShareState(encoded);
+    if (v1) {
+      setSharedSummary(v1);
+    }
+  }, [setSharedPayload, setSharedSummary]);
 }
