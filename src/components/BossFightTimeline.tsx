@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, Fragment, useEffect, useRef, useCallback } from 'react';
 import type { Boss, BossProgress, Attempt } from '../types';
+import { useHashRoute } from '../hooks/useHashRoute';
 
 type FeedEntry = Attempt & { boss: Boss };
 
@@ -8,8 +9,10 @@ type Props = {
   bosses: Boss[];
 };
 
+const PAGE_SIZE = 50;
+
 const CHAPTERS = [0, 1, 2, 3, 4, 5, 6] as const;
-type ChapterFilter = (typeof CHAPTERS)[number]; // 0 = All
+type ChapterFilter = (typeof CHAPTERS)[number];
 
 const CHAPTER_LABELS: Record<number, string> = {
   0: 'All',
@@ -21,48 +24,71 @@ const CHAPTER_LABELS: Record<number, string> = {
   6: '第六回',
 };
 
+function dateLabel(ts: number): string {
+  const now = new Date();
+  const d = new Date(ts);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const diff = todayStart - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round(diff / 86_400_000);
+
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return d.toLocaleDateString(undefined, { weekday: 'long' });
+  return d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+}
+
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60_000);
   const hours = Math.floor(diff / 3_600_000);
   const days = Math.floor(diff / 86_400_000);
   if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 60) return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function DeathIcon() {
+function groupByDate(entries: FeedEntry[]): { label: string; key: string; entries: FeedEntry[] }[] {
+  const groups: Map<string, FeedEntry[]> = new Map();
+  for (const e of entries) {
+    const label = dateLabel(e.timestamp);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(e);
+  }
+  return Array.from(groups.entries()).map(([label, entries]) => ({
+    label,
+    key: label,
+    entries,
+  }));
+}
+
+function DeathDot() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="flex-shrink-0 mt-0.5">
-      <circle cx="8" cy="8" r="7" fill="#c4453a" opacity="0.15" />
-      <circle cx="8" cy="7" r="3.5" fill="#c4453a" opacity="0.7" />
-      <rect x="5.5" y="9.5" width="2" height="2" rx="0.5" fill="#c4453a" opacity="0.5" />
-      <rect x="8.5" y="9.5" width="2" height="2" rx="0.5" fill="#c4453a" opacity="0.5" />
-    </svg>
+    <div
+      aria-hidden="true"
+      className="absolute w-3 h-3 rounded-full bg-primary border-2 border-primary"
+      style={{ left: 44, top: 14 }}
+    />
   );
 }
 
-function KillIcon() {
+function KillDot() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="flex-shrink-0 mt-0.5">
-      <circle cx="8" cy="8" r="7" fill="#5a8a6e" opacity="0.15" />
-      <polyline
-        points="4.5,8.5 7,11 11.5,5"
-        stroke="#5a8a6e"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.85"
-      />
-    </svg>
+    <div
+      aria-hidden="true"
+      className="absolute w-3 h-3 rounded-full bg-jade border-2 border-jade"
+      style={{ left: 44, top: 14 }}
+    />
   );
 }
 
 export function BossFightTimeline({ progress, bosses }: Props) {
   const [chapter, setChapter] = useState<ChapterFilter>(0);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { navigate } = useHashRoute();
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
 
   const filteredBosses = chapter === 0 ? bosses : bosses.filter((b) => b.chapter === chapter);
 
@@ -74,79 +100,222 @@ export function BossFightTimeline({ progress, bosses }: Props) {
 
   feed.sort((a, b) => b.timestamp - a.timestamp);
 
+  const visibleFeed = feed.slice(0, visibleCount);
+  const hasMore = visibleCount < feed.length;
+  const groups = groupByDate(visibleFeed);
+
+  // Reset pagination when chapter filter changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [chapter]);
+
+  // IntersectionObserver: load next page when sentinel comes into view
+  const loadMore = useCallback(() => {
+    if (hasMore) setVisibleCount((c) => c + PAGE_SIZE);
+  }, [hasMore]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: '200px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  function jumpToStart() {
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   return (
-    <div className="bg-surface-dark-card border border-hairline-dark rounded-lg overflow-hidden">
+    <div className="bg-surface-dark-card border border-hairline-dark rounded-lg overflow-hidden" ref={topRef}>
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-hairline-dark">
         <h3 className="font-display text-[22px] font-medium tracking-[0.3px] text-parchment-text mb-4">
           Battle Chronicle
         </h3>
 
-        {/* Chapter filter tabs */}
-        <div className="flex gap-1 flex-wrap">
-          {CHAPTERS.map((ch) => (
-            <button
-              key={ch}
-              onClick={() => setChapter(ch)}
-              className={[
-                'px-3 py-1.5 rounded-md font-sans text-[11px] font-semibold tracking-[1.2px] uppercase transition-colors',
-                chapter === ch
-                  ? 'bg-parchment-aged text-ink'
-                  : 'text-parchment-text-mute border border-hairline-dark hover:text-parchment-text',
-              ].join(' ')}
-            >
-              {CHAPTER_LABELS[ch]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Feed */}
-      {feed.length === 0 ? (
-        <p className="px-6 py-8 font-sans text-[13px] text-parchment-text-mute italic">
-          No attempts logged yet. Start fighting.
-        </p>
-      ) : (
-        <ol className="divide-y divide-hairline-dark max-h-[520px] overflow-y-auto" aria-label="Boss fight chronicle">
-          {feed.map((entry, i) => {
-            const isDeath = entry.type === 'death';
+        {/* Chapter filter — ink-stroke tabs */}
+        <div className="flex items-center flex-wrap gap-y-1" role="tablist" aria-label="Filter by chapter">
+          {CHAPTERS.map((ch, i) => {
+            const isActive = chapter === ch;
             return (
-              <li key={`${entry.id}-${i}`} className="flex gap-3 px-6 py-3">
-                {isDeath ? <DeathIcon /> : <KillIcon />}
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span
-                      className={`font-display text-[13px] font-medium tracking-[0.3px] ${
-                        isDeath ? 'text-primary' : 'text-jade'
-                      }`}
-                    >
-                      {isDeath ? 'Died to' : 'Vanquished'}{' '}
-                      <span className="text-parchment-text">{entry.boss.name}</span>
-                    </span>
-                    <span className="font-sans text-[12px] text-parchment-text-mute flex-shrink-0">
-                      {relativeTime(entry.timestamp)}
-                    </span>
-                  </div>
-
-                  {entry.note && (
-                    <p className="font-sans text-[13px] text-parchment-text-mute mt-0.5 leading-snug">
-                      {entry.note}
-                    </p>
-                  )}
-
-                  {entry.gif && (
-                    <img
-                      src={entry.gif.thumbnailUrl}
-                      alt={entry.gif.description}
-                      className="mt-1.5 rounded-sm max-h-16 object-cover"
-                    />
-                  )}
-                </div>
-              </li>
+              <Fragment key={ch}>
+                {i > 0 && (
+                  <span aria-hidden="true" className="mx-2 text-hairline select-none text-[12px]">·</span>
+                )}
+                <button
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setChapter(ch)}
+                  className="relative flex flex-col items-center pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
+                >
+                  <span
+                    className={`font-zh text-[13px] tracking-[0.5px] transition-colors duration-150 ${
+                      isActive
+                        ? 'text-parchment-text'
+                        : 'text-parchment-text-mute hover:text-parchment-text'
+                    }`}
+                  >
+                    {CHAPTER_LABELS[ch]}
+                  </span>
+                  <span className="absolute bottom-0 left-0 right-0" style={{ height: 6 }} aria-hidden="true">
+                    {isActive && (
+                      <svg
+                        width="100%"
+                        height="6"
+                        viewBox="0 0 60 6"
+                        preserveAspectRatio="none"
+                        className="brush-stroke-in"
+                      >
+                        <path
+                          d="M0,4.5 C8,1.5 20,5.5 30,3 C40,0.5 52,5 60,3.5"
+                          stroke="#c4453a"
+                          strokeWidth="2.5"
+                          fill="none"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </Fragment>
             );
           })}
-        </ol>
+        </div>
+
+        {/* Entry count */}
+        {feed.length > 0 && (
+          <p className="mt-3 font-mono text-[11px] text-parchment-text-mute">
+            {visibleFeed.length} of {feed.length} entries
+          </p>
+        )}
+      </div>
+
+      {/* Timeline body */}
+      {feed.length === 0 ? (
+        <p className="px-6 py-10 font-display-alt italic text-[14px] text-parchment-text-mute">
+          No tale yet told. The mountain awaits your first defeat.
+        </p>
+      ) : (
+        <div className="px-6 pb-8" aria-label="Boss fight chronicle">
+          {groups.map((group, gi) => (
+            <div key={group.key}>
+              {/* Date header */}
+              <div className={`${gi === 0 ? 'pt-6' : 'pt-2'} pb-3 flex items-center gap-3`}>
+                <span className="font-sans text-[11px] uppercase tracking-[1.8px] text-parchment-text-mute select-none">
+                  {group.label}
+                </span>
+                <div className="flex-1 h-px bg-hairline-dark" />
+              </div>
+
+              {/* Entries with rail */}
+              <div className="relative">
+                <div
+                  aria-hidden="true"
+                  className="absolute top-0 bottom-0 w-[2px] bg-primary opacity-50"
+                  style={{ left: 50 }}
+                />
+
+                <ol className="space-y-0">
+                  {group.entries.map((entry) => {
+                    const isDeath = entry.type === 'death';
+                    return (
+                      <li key={entry.id} className="relative pl-[72px] py-3">
+                        {isDeath ? <DeathDot /> : <KillDot />}
+
+                        <div className="bg-canvas-warm border border-hairline-dark rounded-lg p-4 min-w-0">
+                          <div className="flex gap-4">
+                            <div className="flex gap-3 flex-1 min-w-0">
+                              <img
+                                src={entry.boss.imageUrl}
+                                alt={entry.boss.name}
+                                className="w-[60px] h-[60px] rounded-lg object-cover flex-shrink-0 border border-hairline-dark"
+                                style={{
+                                  objectPosition: entry.boss.focalPoint
+                                    ? `${entry.boss.focalPoint.x * 100}% ${entry.boss.focalPoint.y * 100}%`
+                                    : 'center',
+                                }}
+                              />
+                              <div className="min-w-0 flex flex-col justify-center gap-0.5">
+                                <button
+                                  onClick={() => navigate(`/boss/${entry.boss.id}`)}
+                                  className={`font-display text-[14px] font-semibold tracking-[0.3px] text-left hover:underline ${
+                                    isDeath ? 'text-primary' : 'text-jade'
+                                  }`}
+                                >
+                                  {entry.boss.name}
+                                </button>
+                                <span className="font-zh text-[11px] text-parchment-text-mute">
+                                  {entry.boss.nameZh}
+                                </span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span
+                                    className={`font-sans text-[10px] font-bold uppercase tracking-[1.4px] px-1.5 py-0.5 rounded ${
+                                      isDeath
+                                        ? 'bg-primary/15 text-primary'
+                                        : 'bg-jade/15 text-jade'
+                                    }`}
+                                  >
+                                    {isDeath ? 'Death' : 'Vanquished'}
+                                  </span>
+                                  <span className="font-mono text-[11px] text-parchment-text-mute">
+                                    {relativeTime(entry.timestamp)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {entry.gif && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={entry.gif.url}
+                                  alt={entry.gif.description}
+                                  className="rounded-md object-cover"
+                                  style={{ minWidth: 280, minHeight: 160, maxWidth: 320, maxHeight: 200 }}
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {entry.note && (
+                            <p className="font-display-alt italic text-[13px] text-parchment-text-mute mt-3 leading-relaxed border-t border-hairline-dark pt-3">
+                              {entry.note}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            </div>
+          ))}
+
+          {/* Sentinel for infinite scroll */}
+          <div ref={sentinelRef} aria-hidden="true" className="h-1" />
+
+          {/* Bottom controls */}
+          <div className="mt-6 flex items-center justify-between">
+            {hasMore ? (
+              <p className="font-sans text-[12px] text-parchment-text-mute italic">
+                Scroll for more…
+              </p>
+            ) : (
+              <p className="font-sans text-[12px] text-parchment-text-mute italic">
+                All {feed.length} entries shown.
+              </p>
+            )}
+            <button
+              onClick={jumpToStart}
+              className="font-sans text-[12px] text-parchment-text-mute hover:text-parchment-text underline underline-offset-2 transition-colors"
+            >
+              ↑ Jump to start
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
