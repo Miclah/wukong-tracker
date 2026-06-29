@@ -3,6 +3,8 @@ import { bosses } from './data/bosses';
 import { useTrackerStore } from './store/useTrackerStore';
 import { useSharedStore } from './store/useSharedStore';
 import { useSharedStateLoad } from './hooks/useSharedStateLoad';
+import { useViewProgress } from './hooks/useViewState';
+import { ReadOnlyBanner } from './components/ReadOnlyBanner';
 import { useAchievementWatcher } from './hooks/useAchievementWatcher';
 import { useHashRoute } from './hooks/useHashRoute';
 import { ChapterTabs } from './components/ChapterTabs';
@@ -48,24 +50,29 @@ export default function App() {
   const { route, navigate } = useHashRoute();
 
   const sharedSummary = useSharedStore((s) => s.sharedSummary);
+  const isReadOnly    = useSharedStore((s) => s.isReadOnly);
+  const sharedPayload = useSharedStore((s) => s.sharedPayload);
 
   const [chapter, setChapter] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+  // Local theme state for read-only visitors; they can toggle without touching the store.
+  const [readOnlyTheme, setReadOnlyTheme] = useState<'dark' | 'light'>('light');
 
   // Derive section from hash route
   const bossPageId = route.startsWith('/boss/') ? route.slice(6) : null;
   const bossForPage = bossPageId ? (bosses.find((b) => b.id === bossPageId) ?? null) : null;
   const rootTab: RootTab = route === '/tally' ? 'tally' : route === '/map' ? 'map' : 'bosses';
 
-  const progress            = useTrackerStore((s) => s.progress);
+  const progress            = useViewProgress();
   const gifPickerEnabled    = useTrackerStore((s) => s.reactionsEnabled);
   const setGifPickerEnabled = useTrackerStore((s) => s.setReactionsEnabled);
   const theme               = useTrackerStore((s) => s.theme);
   const setTheme            = useTrackerStore((s) => s.setTheme);
 
-  // Apply theme class to <html> so CSS variables take effect
+  // Apply theme class to <html>. Shared v2 views use a local toggle seeded to 'light'.
   useEffect(() => {
-    document.documentElement.classList.toggle('light', theme === 'light');
-  }, [theme]);
+    const effectiveTheme = isReadOnly ? readOnlyTheme : theme;
+    document.documentElement.classList.toggle('light', effectiveTheme === 'light');
+  }, [theme, isReadOnly, readOnlyTheme]);
 
   // Shared link takes over the entire view — user data is never shown or touched
   if (sharedSummary) {
@@ -122,6 +129,7 @@ export default function App() {
       <MountainBackdrop />
       <EmberGlow />
       <CalligraphyRain />
+      {isReadOnly && <ReadOnlyBanner />}
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="bg-canvas-soft border-b border-hairline-dark sticky top-0 z-30">
         <div className="max-w-[1280px] mx-auto px-6">
@@ -161,40 +169,53 @@ export default function App() {
               </p>
             </div>
 
-            {/* Right: toggles */}
+            {/* Right: toggles (hidden in read-only mode) */}
             <div className="flex items-center justify-end gap-2">
               {/* GIF picker toggle */}
-              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                <span className="font-sans text-[11px] tracking-[0.8px] uppercase text-parchment-text-mute">GIF</span>
-                <button
-                  role="switch"
-                  aria-checked={gifPickerEnabled}
-                  aria-label="Toggle GIF picker"
-                  onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
-                  className={[
-                    'relative w-10 h-5 rounded-full overflow-hidden transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
-                    gifPickerEnabled ? 'bg-primary' : 'bg-hairline',
-                  ].join(' ')}
-                >
-                  <span
-                    className="absolute top-0.5 w-4 h-4 rounded-full bg-parchment-text"
-                    style={{
-                      left: gifPickerEnabled ? 22 : 2,
-                      transition: 'left 0.15s',
-                    }}
-                  />
-                </button>
-              </label>
+              {!isReadOnly && (
+                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <span className="font-sans text-[11px] tracking-[0.8px] uppercase text-parchment-text-mute">GIF</span>
+                  <button
+                    role="switch"
+                    aria-checked={gifPickerEnabled}
+                    aria-label="Toggle GIF picker"
+                    onClick={() => setGifPickerEnabled(!gifPickerEnabled)}
+                    className={[
+                      'relative w-10 h-5 rounded-full overflow-hidden transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
+                      gifPickerEnabled ? 'bg-primary' : 'bg-hairline',
+                    ].join(' ')}
+                  >
+                    <span
+                      className="absolute top-0.5 w-4 h-4 rounded-full bg-parchment-text"
+                      style={{
+                        left: gifPickerEnabled ? 22 : 2,
+                        transition: 'left 0.15s',
+                      }}
+                    />
+                  </button>
+                </label>
+              )}
 
-              {/* Theme toggle */}
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-                className="w-8 h-8 flex items-center justify-center rounded text-parchment-text-mute hover:text-parchment-text hover:bg-hairline/20 transition-colors text-[16px]"
-              >
-                {theme === 'dark' ? '☀' : '☾'}
-              </button>
+              {/* Theme toggle — works in read-only via local state */}
+              {isReadOnly ? (
+                <button
+                  onClick={() => setReadOnlyTheme(readOnlyTheme === 'dark' ? 'light' : 'dark')}
+                  aria-label={`Switch to ${readOnlyTheme === 'dark' ? 'light' : 'dark'} theme`}
+                  title={`Switch to ${readOnlyTheme === 'dark' ? 'light' : 'dark'} theme`}
+                  className="w-8 h-8 flex items-center justify-center rounded text-parchment-text-mute hover:text-parchment-text hover:bg-hairline/20 transition-colors text-[16px]"
+                >
+                  {readOnlyTheme === 'dark' ? '☀' : '☾'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                  title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                  className="w-8 h-8 flex items-center justify-center rounded text-parchment-text-mute hover:text-parchment-text hover:bg-hairline/20 transition-colors text-[16px]"
+                >
+                  {theme === 'dark' ? '☀' : '☾'}
+                </button>
+              )}
             </div>
           </div>
 

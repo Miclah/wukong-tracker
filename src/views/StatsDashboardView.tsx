@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTrackerStore } from '../store/useTrackerStore';
+import { useSharedStore } from '../store/useSharedStore';
+import { useViewProgress, useViewAchievements } from '../hooks/useViewState';
 import { bosses } from '../data/bosses';
 import { StatsCard } from '../components/StatsCard';
 import { ProgressBar } from '../components/ProgressBar';
@@ -33,8 +35,9 @@ const CHAPTER_NAMES: Record<number, string> = {
 };
 
 export function StatsDashboardView() {
-  const progress             = useTrackerStore((s) => s.progress);
-  const unlockedAchievements = useTrackerStore((s) => s.unlockedAchievements);
+  const progress             = useViewProgress();
+  const unlockedAchievements = useViewAchievements();
+  const isReadOnly           = useSharedStore((s) => s.isReadOnly);
   const restoreFromBackup    = useTrackerStore((s) => s.restoreFromBackup);
   const exportRef  = useRef<HTMLDivElement>(null);
   const importRef  = useRef<HTMLInputElement>(null);
@@ -174,45 +177,47 @@ export function StatsDashboardView() {
       {/* ── Boss fight timeline ────────────────────────────────── */}
       <BossFightTimeline progress={progress} bosses={bosses} />
 
-      {/* ── Share CTA ─────────────────────────────────────────── */}
-      <ShareCTA onDownload={handleDownload} />
+      {/* ── Share CTA — hidden in read-only mode ─────────────── */}
+      {!isReadOnly && <ShareCTA onDownload={handleDownload} />}
 
-      {/* ── Backup / Restore ──────────────────────────────────── */}
-      <div className="bg-surface-dark-card border border-hairline-dark rounded-lg p-6">
-        <h3 className="font-display text-[22px] font-medium tracking-[0.3px] text-parchment-text mb-2">
-          Backup & Restore
-        </h3>
-        <p className="font-sans text-body-sm text-parchment-text-mute mb-5">
-          Export your full journal (including attempt logs and GIFs) as JSON, or restore from a previous backup.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={handleExportJson}
-            className="px-5 h-10 rounded-md bg-parchment text-ink font-sans text-btn tracking-[0.3px] hover:bg-parchment-aged transition-colors"
-          >
-            Export JSON
-          </button>
-          <button
-            onClick={() => { setImportError(null); importRef.current?.click(); }}
-            className="px-5 h-10 rounded-md border border-hairline font-sans text-btn text-parchment-text-mute hover:bg-canvas-soft transition-colors"
-          >
-            Import JSON
-          </button>
-          <input
-            ref={importRef}
-            type="file"
-            accept=".json,application/json"
-            className="hidden"
-            aria-hidden="true"
-            onChange={handleImportFile}
-          />
-        </div>
-        {importError && (
-          <p className="mt-3 font-sans text-body-sm text-primary" role="alert">
-            {importError}
+      {/* ── Backup / Restore — hidden in read-only mode ───────── */}
+      {!isReadOnly && (
+        <div className="bg-surface-dark-card border border-hairline-dark rounded-lg p-6">
+          <h3 className="font-display text-[22px] font-medium tracking-[0.3px] text-parchment-text mb-2">
+            Backup & Restore
+          </h3>
+          <p className="font-sans text-body-sm text-parchment-text-mute mb-5">
+            Export your full journal (including attempt logs and GIFs) as JSON, or restore from a previous backup.
           </p>
-        )}
-      </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleExportJson}
+              className="px-5 h-10 rounded-md bg-parchment text-ink font-sans text-btn tracking-[0.3px] hover:bg-parchment-aged transition-colors"
+            >
+              Export JSON
+            </button>
+            <button
+              onClick={() => { setImportError(null); importRef.current?.click(); }}
+              className="px-5 h-10 rounded-md border border-hairline font-sans text-btn text-parchment-text-mute hover:bg-canvas-soft transition-colors"
+            >
+              Import JSON
+            </button>
+            <input
+              ref={importRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              aria-hidden="true"
+              onChange={handleImportFile}
+            />
+          </div>
+          {importError && (
+            <p className="mt-3 font-sans text-body-sm text-primary" role="alert">
+              {importError}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Hidden export card — mounted in DOM so html-to-image can rasterize it */}
       <StatsCardForExport ref={exportRef} progress={progress} />
