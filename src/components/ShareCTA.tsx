@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTrackerStore } from '../store/useTrackerStore';
-import { bosses } from '../data/bosses';
-import { encodeShareState, buildShareUrl } from '../lib/share';
+import { encodeState, buildShareUrl } from '../lib/share';
 
 type CopyState = 'idle' | 'copied' | 'error';
 type DownloadState = 'idle' | 'busy' | 'error';
@@ -12,12 +11,14 @@ type Props = {
 
 export function ShareCTA({ onDownload }: Props) {
   const progress = useTrackerStore((s) => s.progress);
+  const achievements = useTrackerStore((s) => s.unlockedAchievements);
+  const favoriteGifs = useTrackerStore((s) => s.favoriteGifs);
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const [downloadState, setDownloadState] = useState<DownloadState>('idle');
 
   async function handleCopy() {
     try {
-      const encoded = encodeShareState(progress, bosses);
+      const encoded = encodeState({ progress, achievements, favoriteGifs });
       const url = buildShareUrl(encoded);
       await navigator.clipboard.writeText(url);
       setCopyState('copied');
