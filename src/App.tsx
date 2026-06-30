@@ -9,6 +9,7 @@ import { useAchievementWatcher } from './hooks/useAchievementWatcher';
 import { useHashRoute } from './hooks/useHashRoute';
 import { ChapterTabs } from './components/ChapterTabs';
 import { AchievementUnlockOverlay } from './components/AchievementUnlockOverlay';
+import { BrushStrokeUnderline } from './components/BrushStroke';
 import { BossGridView } from './views/BossGridView';
 import { StatsDashboardView } from './views/StatsDashboardView';
 import { SharedStatsView } from './views/SharedStatsView';
@@ -260,13 +261,18 @@ export default function App() {
                   aria-selected={isActive}
                   onClick={() => navigate(tab.id === 'bosses' ? '/' : '/' + tab.id)}
                   className={[
-                    'px-5 py-2.5 font-sans text-[13px] font-semibold tracking-[1.2px] uppercase transition-colors border-b-2',
+                    'relative px-5 py-2.5 font-sans text-[13px] font-semibold tracking-[1.2px] uppercase transition-colors',
                     isActive
-                      ? 'border-primary text-parchment-text'
-                      : 'border-transparent text-parchment-text-mute hover:text-parchment-text',
+                      ? 'text-parchment-text'
+                      : 'text-parchment-text-mute hover:text-parchment-text',
                   ].join(' ')}
                 >
                   {tab.label}
+                  {isActive && (
+                    <span key={rootTab} className="absolute bottom-0 left-2 right-2">
+                      <BrushStrokeUnderline />
+                    </span>
+                  )}
                 </button>
               );
             })}
