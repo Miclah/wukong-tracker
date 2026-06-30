@@ -1,4 +1,4 @@
-import type { Boss, BossProgress } from '../types';
+import type { Boss, BossProgress, FavoriteGif } from '../types';
 import { totalDeaths, longestCleanStreak, peakRage, chapterProgress } from '../lib/stats';
 
 type Progress = Record<string, BossProgress>;
@@ -12,7 +12,7 @@ export interface Achievement {
   description: string;
   lockedHint: string;    // poetic hint shown on hover when locked
   category: AchievementCategory;
-  check: (progress: Progress, bosses: Boss[]) => boolean;
+  check: (progress: Progress, bosses: Boss[], favoriteGifs?: FavoriteGif[]) => boolean;
 }
 
 function deathsFor(bp: BossProgress) {
@@ -172,6 +172,89 @@ export const ACHIEVEMENTS: Achievement[] = [
       Object.values(p).some(
         (bp) => bp.defeated && fightTimeFor(bp) > 0 && fightTimeFor(bp) < 2,
       ),
+  },
+  {
+    id: 'night-sage',
+    name: 'Night Sage',
+    nameZh: '夜賢',
+    description: '10+ attempts logged between midnight and 4 AM.',
+    lockedHint: 'The mountain is quietest before dawn.',
+    category: '受',
+    check: (p) => {
+      let count = 0;
+      for (const bp of Object.values(p)) {
+        for (const a of bp.attempts) {
+          const hour = new Date(a.timestamp).getHours();
+          if (hour < 4) count++;
+        }
+      }
+      return count >= 10;
+    },
+  },
+  {
+    id: 'comeback',
+    name: 'Comeback',
+    nameZh: '回擊',
+    description: 'Defeat a boss immediately after 10+ consecutive deaths.',
+    lockedHint: 'Every fall is practice for the rise.',
+    category: '勝',
+    check: (p) =>
+      Object.values(p).some((bp) => {
+        if (!bp.defeated) return false;
+        // attempts are newest-first; index 0 is the kill, 1+ are prior deaths
+        if (bp.attempts[0]?.type !== 'kill') return false;
+        let streak = 0;
+        for (let i = 1; i < bp.attempts.length; i++) {
+          if (bp.attempts[i].type === 'death') streak++;
+          else break;
+        }
+        return streak >= 10;
+      }),
+  },
+  {
+    id: 'marathon',
+    name: 'Marathon',
+    nameZh: '長跑',
+    description: '50+ attempts within a single 4-hour session.',
+    lockedHint: 'Some journeys require stamina above all else.',
+    category: '受',
+    check: (p) => {
+      const ts = Object.values(p)
+        .flatMap((bp) => bp.attempts.map((a) => a.timestamp))
+        .sort((a, b) => a - b);
+      if (ts.length < 50) return false;
+      const FOUR_HOURS = 4 * 60 * 60 * 1000;
+      for (let i = 0; i <= ts.length - 50; i++) {
+        if (ts[i + 49] - ts[i] <= FOUR_HOURS) return true;
+      }
+      return false;
+    },
+  },
+  {
+    id: 'storyteller',
+    name: 'Storyteller',
+    nameZh: '述者',
+    description: 'Add notes to 25 or more individual attempts.',
+    lockedHint: 'The one who writes, remembers.',
+    category: '賢',
+    check: (p) => {
+      let count = 0;
+      for (const bp of Object.values(p)) {
+        for (const a of bp.attempts) {
+          if (a.note && a.note.trim().length > 0) count++;
+        }
+      }
+      return count >= 25;
+    },
+  },
+  {
+    id: 'curator',
+    name: 'Curator',
+    nameZh: '藏家',
+    description: 'Favorite 10 or more GIFs.',
+    lockedHint: 'A collection of sorrows and triumphs.',
+    category: '賢',
+    check: (_p, _bosses, favoriteGifs = []) => favoriteGifs.length >= 10,
   },
 ];
 
