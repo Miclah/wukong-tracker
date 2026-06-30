@@ -9,8 +9,7 @@ import { RageMeter } from '../components/RageMeter';
 import { BossFightTimeline } from '../components/BossFightTimeline';
 import { AchievementPill } from '../components/AchievementPill';
 import { ShareCTA } from '../components/ShareCTA';
-import { StatsCardForExport } from '../components/StatsCardForExport';
-import { exportStatsPng } from '../lib/statsImage';
+import { ExportPickerModal } from '../components/ExportPickerModal';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { exportJson, parseBackup } from '../lib/backup';
 import {
@@ -39,13 +38,13 @@ export function StatsDashboardView() {
   const unlockedAchievements = useViewAchievements();
   const isReadOnly           = useSharedStore((s) => s.isReadOnly);
   const restoreFromBackup    = useTrackerStore((s) => s.restoreFromBackup);
-  const exportRef  = useRef<HTMLDivElement>(null);
   const importRef  = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [showExportPicker, setShowExportPicker] = useState(false);
 
-  async function handleDownload() {
-    if (!exportRef.current) return;
-    await exportStatsPng(exportRef.current);
+  function handleDownload() {
+    setShowExportPicker(true);
+    return Promise.resolve();
   }
 
   function handleExportJson() {
@@ -219,12 +218,13 @@ export function StatsDashboardView() {
         </div>
       )}
 
-      <div
-        aria-hidden="true"
-        style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }}
-      >
-        <StatsCardForExport ref={exportRef} progress={progress} unlockedAchievements={unlockedAchievements} />
-      </div>
+      {showExportPicker && (
+        <ExportPickerModal
+          progress={progress}
+          unlockedAchievements={unlockedAchievements}
+          onClose={() => setShowExportPicker(false)}
+        />
+      )}
     </div>
   );
 }
