@@ -1,5 +1,5 @@
 import * as lzString from 'lz-string';
-import type { Boss, BossProgress } from '../types';
+import type { Boss, BossProgress, FavoriteGif } from '../types';
 import { longestCleanStreak, longestDeathStreak, peakRage } from './stats';
 
 /** Per-boss summary encoded into the share URL. No GIFs, no notes, no timestamps. */
@@ -15,6 +15,19 @@ export type SharedSummary = {
   v: 1;
   bosses: Record<string, BossSnapshot>;
   cleanStreak: number;
+};
+
+/**
+ * Full-state share payload (v2). Carries complete progress including all
+ * attempts, GIF URLs, notes, achievements, and favorites.
+ * GIFs are URL references only — no embedded binary data.
+ */
+export type SharePayload = {
+  v: 2;
+  progress: Record<string, BossProgress>;
+  achievements: string[];
+  favoriteGifs: FavoriteGif[];
+  theme: 'light';
 };
 
 export function encodeShareState(
@@ -63,4 +76,48 @@ export function buildShareUrl(encoded: string): string {
   url.hash = '';
   url.searchParams.set('s', encoded);
   return url.toString();
+}
+
+/** Build a share URL that references a GitHub Gist by ID via `?gist=`. */
+export function buildGistUrl(gistId: string): string {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('gist', gistId);
+  return url.toString();
+}
+
+/** Safe URL length threshold for inline ?s= sharing (Chrome limit ~2MB, conservative here). */
+export const SHARE_URL_LIMIT = 28_000;
+
+/**
+ * Encode the full playthrough state into a compressed URI-safe string.
+ * The resulting string is meant for `?s=` query param via `buildShareUrl`.
+ */
+export function encodeState(state: {
+  progress: Record<string, BossProgress>;
+  achievements: string[];
+  favoriteGifs: FavoriteGif[];
+}): string {
+  const payload: SharePayload = {
+    v: 2,
+    progress: state.progress,
+    achievements: state.achievements,
+    favoriteGifs: state.favoriteGifs,
+    theme: 'light',
+  };
+  return lzString.compressToEncodedURIComponent(JSON.stringify(payload));
+}
+
+/** Decode a full-state share string produced by `encodeState`. Returns null if invalid or wrong version. */
+export function decodeState(encoded: string): SharePayload | null {
+  try {
+    const json = lzString.decompressFromEncodedURIComponent(encoded);
+    if (!json) return null;
+    const parsed = JSON.parse(json) as SharePayload;
+    if (parsed.v !== 2) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }

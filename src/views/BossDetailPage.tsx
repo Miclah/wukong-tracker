@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Boss, Difficulty } from '../types'
 import { useTrackerStore } from '../store/useTrackerStore'
+import { useSharedStore } from '../store/useSharedStore'
+import { useViewProgress } from '../hooks/useViewState'
 import { useGifDrawerStore } from '../store/useGifDrawerStore'
 import { InkBlotImage } from '../components/InkBlotImage'
 import { InkStrokeRating } from '../components/InkStrokeRating'
@@ -90,7 +92,9 @@ interface Props {
 }
 
 export function BossDetailPage({ boss, navigate }: Props) {
-  const progress          = useTrackerStore((s) => s.progress[boss.id])
+  const allProgress       = useViewProgress()
+  const progress          = allProgress[boss.id]
+  const isReadOnly        = useSharedStore((s) => s.isReadOnly)
   const logAttempt        = useTrackerStore((s) => s.logAttempt)
   const markDefeated      = useTrackerStore((s) => s.markDefeated)
   const setBossNotes      = useTrackerStore((s) => s.setBossNotes)
@@ -258,7 +262,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
             </span>
             <InkStrokeRating
               value={(progress?.difficulty ?? 0) as Difficulty}
-              onChange={(v) => setBossDifficulty(boss.id, v)}
+              onChange={isReadOnly ? undefined : (v) => setBossDifficulty(boss.id, v)}
             />
           </div>
 
@@ -280,8 +284,8 @@ export function BossDetailPage({ boss, navigate }: Props) {
             )}
           </div>
 
-          {/* Action buttons */}
-          <div className="mt-6 flex flex-col gap-3">
+          {/* Action buttons — hidden in read-only mode */}
+          {!isReadOnly && <div className="mt-6 flex flex-col gap-3">
             {activeFlow ? (
               // Non-GIF inline form (only shown when gifPickerEnabled is false)
               <div className="flex flex-col gap-2 bg-canvas/30 rounded-md p-3 border border-hairline">
@@ -351,7 +355,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
                 )}
               </>
             )}
-          </div>
+          </div>}
 
           {/* Strategy notes */}
           <div className="mt-6 border-t border-hairline" />
@@ -359,7 +363,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
             <p className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded">
               Strategy Notes
             </p>
-            {!notesEditing && (
+            {!isReadOnly && !notesEditing && (
               <button
                 onClick={() => { setNotesDraft(progress?.notes ?? ''); setNotesEditing(true) }}
                 aria-label="Edit strategy notes"
@@ -369,7 +373,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
               </button>
             )}
           </div>
-          {notesEditing ? (
+          {!isReadOnly && notesEditing ? (
             <div className="flex flex-col gap-2">
               <textarea
                 ref={notesAreaRef}
@@ -397,11 +401,11 @@ export function BossDetailPage({ boss, navigate }: Props) {
             </div>
           ) : progress?.notes ? (
             <div
-              className="cursor-pointer"
-              onClick={() => { setNotesDraft(progress.notes ?? ''); setNotesEditing(true) }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
+              className={isReadOnly ? undefined : 'cursor-pointer'}
+              onClick={isReadOnly ? undefined : () => { setNotesDraft(progress.notes ?? ''); setNotesEditing(true) }}
+              role={isReadOnly ? undefined : 'button'}
+              tabIndex={isReadOnly ? undefined : 0}
+              onKeyDown={isReadOnly ? undefined : (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   setNotesDraft(progress.notes ?? '')
                   setNotesEditing(true)
@@ -410,14 +414,14 @@ export function BossDetailPage({ boss, navigate }: Props) {
             >
               {renderMarkdown(progress.notes)}
             </div>
-          ) : (
+          ) : !isReadOnly ? (
             <button
               onClick={() => { setNotesDraft(''); setNotesEditing(true) }}
               className="w-full text-left font-sans text-body-sm text-ink-faded italic hover:text-ink-mute transition-colors py-1"
             >
               Add strategy notes…
             </button>
-          )}
+          ) : null}
 
           {/* ── Battle Journal ─────────────────────────────────────── */}
           <div className="mt-8 border-t border-hairline pt-6">
