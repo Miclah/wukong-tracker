@@ -7,7 +7,8 @@ import { StatsCard } from '../components/StatsCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { RageMeter } from '../components/RageMeter';
 import { BossFightTimeline } from '../components/BossFightTimeline';
-import { AchievementPill } from '../components/AchievementPill';
+import { AchievementSeal, AchievementProgressStrip } from '../components/AchievementSeal';
+import type { AchievementCategory } from '../data/achievements';
 import { ShareCTA } from '../components/ShareCTA';
 import { ExportPickerModal } from '../components/ExportPickerModal';
 import { ACHIEVEMENTS } from '../data/achievements';
@@ -23,6 +24,12 @@ import {
   longestCleanStreak,
   hardestStreak,
 } from '../lib/stats';
+
+const ACHIEVEMENT_CATEGORIES: { key: AchievementCategory; sub: string }[] = [
+  { key: '受', sub: 'Suffering' },
+  { key: '勝', sub: 'Victory' },
+  { key: '賢', sub: 'Sagacity' },
+];
 
 const CHAPTER_NAMES: Record<number, string> = {
   1: 'Black Wind Mountain',
@@ -152,25 +159,39 @@ export function StatsDashboardView() {
       </div>
 
       {/* ── Achievements ──────────────────────────────────────── */}
-      <div className="bg-surface-dark-card border border-hairline-dark rounded-lg p-6">
-        <h3 className="font-display text-[22px] font-medium tracking-[0.3px] text-parchment-text mb-5">
-          Achievements
-          {unlockedAchievements.length > 0 && (
-            <span className="ml-3 font-mono text-counter-sm text-gold">
-              {unlockedAchievements.length} / {ACHIEVEMENTS.length}
-            </span>
-          )}
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {ACHIEVEMENTS.map((a) => (
-            <AchievementPill
-              key={a.id}
-              name={a.name}
-              description={a.description}
-              unlocked={unlockedAchievements.includes(a.id)}
-            />
-          ))}
+      <div className="bg-surface-dark-card border border-hairline-dark rounded-lg p-6 space-y-8">
+        <div>
+          <h3 className="font-display text-[22px] font-medium tracking-[0.3px] text-parchment-text mb-4">
+            Achievements
+          </h3>
+          <AchievementProgressStrip
+            total={ACHIEVEMENTS.length}
+            unlocked={unlockedAchievements.length}
+          />
         </div>
+
+        {ACHIEVEMENT_CATEGORIES.map(({ key, sub }) => {
+          const group = ACHIEVEMENTS.filter((a) => a.category === key);
+          return (
+            <div key={key}>
+              <div className="flex items-baseline gap-2 mb-5">
+                <span className="font-zh text-[26px] font-bold text-primary">{key}</span>
+                <span className="font-sans text-[11px] uppercase tracking-[1.5px] text-ink-faded">
+                  {sub}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+                {group.map((a) => (
+                  <AchievementSeal
+                    key={a.id}
+                    achievement={a}
+                    unlocked={unlockedAchievements.includes(a.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ── Boss fight timeline ────────────────────────────────── */}
