@@ -219,8 +219,12 @@ export function StatsDashboardView() {
         </div>
       )}
 
-      {/* Hidden export card — mounted in DOM so html-to-image can rasterize it */}
-      <StatsCardForExport ref={exportRef} progress={progress} />
+      <div
+        aria-hidden="true"
+        style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }}
+      >
+        <StatsCardForExport ref={exportRef} progress={progress} unlockedAchievements={unlockedAchievements} />
+      </div>
     </div>
   );
 }
