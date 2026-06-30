@@ -19,7 +19,7 @@ import {
   cleanestKill,
   chapterProgress,
   avgDeathsPerBoss,
-  highestRageEver,
+  currentRageStreak,
   longestCleanStreak,
   hardestStreak,
 } from '../lib/stats';
@@ -76,7 +76,7 @@ export function StatsDashboardView() {
   const hardest = hardestBoss(progress, bosses);
   const cleanest = cleanestKill(progress, bosses);
   const chapters = chapterProgress(progress, bosses);
-  const rageResult = highestRageEver(progress, bosses);
+  const rageResult = currentRageStreak(progress, bosses);
   const cleanStreak = longestCleanStreak(progress, bosses);
   const deathStreak = hardestStreak(progress, bosses);
 

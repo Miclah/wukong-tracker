@@ -205,3 +205,18 @@ export function hardestStreak(progress: Progress, bosses: Boss[]): StreakResult 
   }
   return best && best.streak > 0 ? best : null;
 }
+
+/** Active rage right now — the boss with the highest current rageLevel. */
+export function currentRageStreak(
+  progress: Progress,
+  bosses: Boss[],
+): { boss: Boss; rage: number } | null {
+  let best: { boss: Boss; rage: number } | null = null;
+  for (const boss of bosses) {
+    const rage = rageLevel(boss.id, progress);
+    if (rage > 0 && (best === null || rage > best.rage)) {
+      best = { boss, rage };
+    }
+  }
+  return best;
+}

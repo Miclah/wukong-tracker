@@ -189,6 +189,34 @@ html.light .ember-glow {
   .brush-stroke-in { animation: none; }
 }
 
+/* ── Rage meter ────────────────────────────────────────────────────────────── */
+@keyframes rage-flicker {
+  0%, 100% { transform: scaleX(1)    scaleY(1); }
+  50%       { transform: scaleX(1.018) scaleY(1.03); }
+}
+
+.rage-flicker {
+  animation: rage-flicker 1.5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes rage-shake {
+  0%, 100% { transform: translateX(0)      rotate(0deg); }
+  20%      { transform: translateX(-5px)   rotate(-0.6deg); }
+  40%      { transform: translateX(5px)    rotate(0.6deg); }
+  60%      { transform: translateX(-3px)   rotate(-0.3deg); }
+  80%      { transform: translateX(3px)    rotate(0.3deg); }
+}
+
+.rage-shake {
+  animation: rage-shake 620ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rage-flicker,
+  .rage-shake { animation: none; }
+}
+
 @layer base {
   *,
   *::before,
