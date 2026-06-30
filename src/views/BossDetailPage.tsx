@@ -5,7 +5,7 @@ import { useSharedStore } from '../store/useSharedStore'
 import { useViewProgress } from '../hooks/useViewState'
 import { useGifDrawerStore } from '../store/useGifDrawerStore'
 import { InkBlotImage } from '../components/InkBlotImage'
-import { InkStrokeRating } from '../components/InkStrokeRating'
+import { DifficultyRating } from '../components/DifficultyRating'
 import { SealStamp } from '../components/SealStamp'
 import { JournalTimeline } from '../components/JournalTimeline'
 
@@ -260,9 +260,10 @@ export function BossDetailPage({ boss, navigate }: Props) {
             <span className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded">
               Difficulty
             </span>
-            <InkStrokeRating
+            <DifficultyRating
               value={(progress?.difficulty ?? 0) as Difficulty}
               onChange={isReadOnly ? undefined : (v) => setBossDifficulty(boss.id, v)}
+              readonly={isReadOnly}
             />
           </div>
 
