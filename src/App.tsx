@@ -8,7 +8,7 @@ import { ReadOnlyBanner } from './components/ReadOnlyBanner';
 import { useAchievementWatcher } from './hooks/useAchievementWatcher';
 import { useHashRoute } from './hooks/useHashRoute';
 import { ChapterTabs } from './components/ChapterTabs';
-import { AchievementToast } from './components/AchievementToast';
+import { AchievementUnlockOverlay } from './components/AchievementUnlockOverlay';
 import { BossGridView } from './views/BossGridView';
 import { StatsDashboardView } from './views/StatsDashboardView';
 import { SharedStatsView } from './views/SharedStatsView';
@@ -315,9 +315,9 @@ export default function App() {
         )}
       </main>
 
-      {/* ── Achievement toast ───────────────────────────────────── */}
+      {/* ── Achievement unlock overlay ──────────────────────────── */}
       {toastAchievement && (
-        <AchievementToast
+        <AchievementUnlockOverlay
           key={toastAchievement.id}
           achievement={toastAchievement}
           onDismiss={dismissToast}
