@@ -189,6 +189,81 @@ html.light .ember-glow {
   .brush-stroke-in { animation: none; }
 }
 
+/* ── Achievement unlock overlay ────────────────────────────────────────────── */
+@keyframes achievement-overlay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes achievement-overlay-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes achievement-stamp-drop {
+  0%   { transform: translateY(-150px) rotate(18deg); opacity: 0; }
+  55%  { transform: translateY(12px)   rotate(-4deg); opacity: 1; }
+  72%  { transform: translateY(-6px)   rotate(1deg); }
+  85%  { transform: translateY(4px)    rotate(-2deg); }
+  100% { transform: translateY(0px)    rotate(-3deg); opacity: 1; }
+}
+
+@keyframes achievement-name-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.achievement-overlay-in {
+  animation: achievement-overlay-fade-in 300ms ease-out forwards;
+}
+
+.achievement-overlay-out {
+  animation: achievement-overlay-fade-out 400ms ease-in forwards;
+}
+
+.achievement-stamp-drop {
+  animation: achievement-stamp-drop 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.achievement-name-rise {
+  animation: achievement-name-rise 400ms ease-out 350ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achievement-overlay-in,
+  .achievement-overlay-out  { animation: none; opacity: 1; }
+  .achievement-stamp-drop,
+  .achievement-name-rise    { animation: none; }
+}
+
+/* ── Rage meter ────────────────────────────────────────────────────────────── */
+@keyframes rage-flicker {
+  0%, 100% { transform: scaleX(1)    scaleY(1); }
+  50%       { transform: scaleX(1.018) scaleY(1.03); }
+}
+
+.rage-flicker {
+  animation: rage-flicker 1.5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes rage-shake {
+  0%, 100% { transform: translateX(0)      rotate(0deg); }
+  20%      { transform: translateX(-5px)   rotate(-0.6deg); }
+  40%      { transform: translateX(5px)    rotate(0.6deg); }
+  60%      { transform: translateX(-3px)   rotate(-0.3deg); }
+  80%      { transform: translateX(3px)    rotate(0.3deg); }
+}
+
+.rage-shake {
+  animation: rage-shake 620ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rage-flicker,
+  .rage-shake { animation: none; }
+}
+
 @layer base {
   *,
   *::before,

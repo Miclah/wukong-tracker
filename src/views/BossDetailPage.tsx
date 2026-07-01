@@ -5,9 +5,10 @@ import { useSharedStore } from '../store/useSharedStore'
 import { useViewProgress } from '../hooks/useViewState'
 import { useGifDrawerStore } from '../store/useGifDrawerStore'
 import { InkBlotImage } from '../components/InkBlotImage'
-import { InkStrokeRating } from '../components/InkStrokeRating'
+import { DifficultyRating } from '../components/DifficultyRating'
 import { SealStamp } from '../components/SealStamp'
 import { JournalTimeline } from '../components/JournalTimeline'
+import { BrushStrokeDivider } from '../components/BrushStroke'
 
 // ── Inline markdown renderer ─────────────────────────────────────────────────
 function renderInline(text: string): React.ReactNode {
@@ -260,13 +261,14 @@ export function BossDetailPage({ boss, navigate }: Props) {
             <span className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded">
               Difficulty
             </span>
-            <InkStrokeRating
+            <DifficultyRating
               value={(progress?.difficulty ?? 0) as Difficulty}
               onChange={isReadOnly ? undefined : (v) => setBossDifficulty(boss.id, v)}
+              readonly={isReadOnly}
             />
           </div>
 
-          <div className="mt-5 border-t border-hairline" />
+          <BrushStrokeDivider className="mt-5" />
 
           {/* Death count */}
           <div className="mt-5">
@@ -358,7 +360,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
           </div>}
 
           {/* Strategy notes */}
-          <div className="mt-6 border-t border-hairline" />
+          <BrushStrokeDivider className="mt-6" />
           <div className="mt-4 flex items-center justify-between mb-2">
             <p className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded">
               Strategy Notes
@@ -424,7 +426,8 @@ export function BossDetailPage({ boss, navigate }: Props) {
           ) : null}
 
           {/* ── Battle Journal ─────────────────────────────────────── */}
-          <div className="mt-8 border-t border-hairline pt-6">
+          <BrushStrokeDivider className="mt-8" />
+          <div className="pt-6">
             <h2 className="font-display text-[1.25rem] font-medium text-parchment-text mb-6">
               Battle Journal
             </h2>
