@@ -12,6 +12,8 @@ const MAX_SCALE = 4;
 
 // Activated via ?dev=1 in the URL. Never shown in production unless the user adds it.
 const IS_DEV_MODE = new URLSearchParams(window.location.search).get('dev') === '1';
+// ?dev=coords — click anywhere on the map to log + copy { x, y } (0–1) to console/clipboard.
+const IS_COORD_MODE = new URLSearchParams(window.location.search).get('dev') === 'coords';
 
 function clamp(v: number, lo: number, hi: number) {
   return Math.min(Math.max(v, lo), hi);
@@ -25,6 +27,9 @@ interface Props {
 
 export function MapView({ onBossClick }: Props) {
   const [chapter, setChapter] = useState<Chapter>(1);
+  // shownChapter lags chapter by one 180ms fade-out so we can cross-fade map images
+  const [shownChapter, setShownChapter] = useState<Chapter>(1);
+  const [mapOpacity, setMapOpacity] = useState(1);
   const [tf, setTf] = useState<Transform>({ scale: 1, x: 0, y: 0 });
   const [imgError, setImgError] = useState(false);
 
@@ -37,20 +42,29 @@ export function MapView({ onBossClick }: Props) {
   const [exportDone, setExportDone] = useState(false);
 
   const progress = useTrackerStore((s) => s.progress);
-  const chapterBosses = bosses.filter((b) => b.chapter === chapter);
+  const chapterBosses = bosses.filter((b) => b.chapter === shownChapter);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
   const lastPinchDist = useRef<number | null>(null);
 
-  const currentChapter = CHAPTER_DATA.find((c) => c.chapter === chapter)!;
+  const currentChapter = CHAPTER_DATA.find((c) => c.chapter === shownChapter)!;
 
+  // Cross-fade: fade out → swap image → fade in
   useEffect(() => {
-    setTf({ scale: 1, x: 0, y: 0 });
-    setImgError(false);
-    setDevCrosshair(null);
-    setDevSelectedBoss(null);
+    if (chapter === shownChapter) return;
+    setMapOpacity(0);
+    const t = setTimeout(() => {
+      setShownChapter(chapter);
+      setTf({ scale: 1, x: 0, y: 0 });
+      setImgError(false);
+      setDevCrosshair(null);
+      setDevSelectedBoss(null);
+      setMapOpacity(1);
+    }, 200);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapter]);
 
   const getClamped = useCallback((x: number, y: number, s: number): Transform => {
@@ -126,8 +140,8 @@ export function MapView({ onBossClick }: Props) {
   }, [getClamped]);
 
   const onMouseDown = (e: React.MouseEvent) => {
-    // In dev placement mode, don't pan — let onClick handle coordinate recording
-    if (IS_DEV_MODE && devSelectedBoss) return;
+    // In dev placement / coord mode, don't pan — let onClick handle coordinate recording
+    if ((IS_DEV_MODE && devSelectedBoss) || IS_COORD_MODE) return;
     isDragging.current = true;
     lastPointer.current = { x: e.clientX, y: e.clientY };
   };
@@ -144,6 +158,23 @@ export function MapView({ onBossClick }: Props) {
 
   // Invert the CSS transform to find where in the div (as %) the user clicked
   const onContainerClick = (e: React.MouseEvent) => {
+    // Coord picker mode: log normalised { x, y } (0–1) for any click
+    if (IS_COORD_MODE) {
+      const rect = containerRef.current!.getBoundingClientRect();
+      const W = rect.width;
+      const H = rect.height;
+      const px = ((e.clientX - rect.left - W / 2 - tf.x) / tf.scale) + W / 2;
+      const py = ((e.clientY - rect.top  - H / 2 - tf.y) / tf.scale) + H / 2;
+      const coord = {
+        x: parseFloat((px / W).toFixed(3)),
+        y: parseFloat((py / H).toFixed(3)),
+      };
+      console.log('[coords]', JSON.stringify(coord));
+      navigator.clipboard.writeText(JSON.stringify(coord)).catch(() => {/* silent */});
+      setDevCrosshair({ x: coord.x * 100, y: coord.y * 100 });
+      return;
+    }
+
     if (!IS_DEV_MODE || !devSelectedBoss) return;
     const rect = containerRef.current!.getBoundingClientRect();
     const W = rect.width;
@@ -184,6 +215,14 @@ export function MapView({ onBossClick }: Props) {
           </p>
         </div>
       )}
+      {IS_COORD_MODE && (
+        <div className="bg-jade/10 border-b border-jade/30 px-4 py-1.5 shrink-0">
+          <p className="font-mono text-[11px] text-jade">
+            <span className="font-semibold">COORD MODE</span>
+            {' '}· Click anywhere on the map — normalised {'{x, y}'} (0–1) logged to console &amp; copied to clipboard
+          </p>
+        </div>
+      )}
 
       {/* Chapter selector */}
       <div className="bg-canvas-soft border-b border-hairline-dark shrink-0">
@@ -197,7 +236,7 @@ export function MapView({ onBossClick }: Props) {
         ref={containerRef}
         className={[
           'flex-1 relative overflow-hidden select-none',
-          IS_DEV_MODE && devSelectedBoss ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing',
+          (IS_DEV_MODE && devSelectedBoss) || IS_COORD_MODE ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing',
         ].join(' ')}
         style={{ touchAction: 'none' }}
         onMouseDown={onMouseDown}
@@ -222,6 +261,8 @@ export function MapView({ onBossClick }: Props) {
             style={{
               transform: `translate(${tf.x}px, ${tf.y}px) scale(${tf.scale})`,
               transformOrigin: 'center center',
+              opacity: mapOpacity,
+              transition: 'opacity 200ms ease-in-out',
             }}
           >
             <img
@@ -268,11 +309,23 @@ export function MapView({ onBossClick }: Props) {
           </div>
         )}
 
-        {/* Zoom indicator */}
-        <div className="absolute bottom-4 right-4 bg-canvas/80 backdrop-blur-sm border border-hairline-dark rounded-md px-3 py-1.5 pointer-events-none">
-          <span className="font-mono text-[12px] text-parchment-text-mute">
-            {Math.round(tf.scale * 100)}%
-          </span>
+        {/* Zoom indicator + reset */}
+        <div className="absolute bottom-4 right-4 flex items-center gap-2">
+          {tf.scale !== 1 || tf.x !== 0 || tf.y !== 0 ? (
+            <button
+              type="button"
+              onClick={() => setTf({ scale: 1, x: 0, y: 0 })}
+              className="bg-canvas/90 backdrop-blur-sm border border-hairline-dark rounded-md px-2.5 py-1.5 font-sans text-[11px] text-parchment-text-mute hover:text-parchment-text hover:border-hairline transition-colors"
+              aria-label="Reset map zoom and position"
+            >
+              Reset
+            </button>
+          ) : null}
+          <div className="bg-canvas/80 backdrop-blur-sm border border-hairline-dark rounded-md px-3 py-1.5 pointer-events-none">
+            <span className="font-mono text-[12px] text-parchment-text-mute">
+              {Math.round(tf.scale * 100)}%
+            </span>
+          </div>
         </div>
 
         {/* Dev panel */}
