@@ -327,6 +327,22 @@ html.light .ember-glow {
   .vanquish-splatter-dot { animation: none; opacity: 0.55; }
 }
 
+/* ── Death counter skull drop ──────────────────────────────────────────────── */
+@keyframes death-skull-drop {
+  0%   { transform: translateY(-40px) rotate(-25deg); opacity: 0; }
+  60%  { transform: translateY(4px)   rotate(8deg);   opacity: 1; }
+  80%  { transform: translateY(-3px)  rotate(-3deg); }
+  100% { transform: translateY(0)     rotate(0deg);   opacity: 1; }
+}
+
+.death-skull-drop {
+  animation: death-skull-drop 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .death-skull-drop { animation: none; opacity: 0; }
+}
+
 @layer base {
   *,
   *::before,

@@ -10,6 +10,7 @@ import { SealStamp } from '../components/SealStamp'
 import { JournalTimeline } from '../components/JournalTimeline'
 import { BrushStrokeDivider } from '../components/BrushStroke'
 import { VanquishRitual } from '../components/VanquishRitual'
+import { DeathStampDrop } from '../components/DeathStampDrop'
 
 // ── Inline markdown renderer ─────────────────────────────────────────────────
 function renderInline(text: string): React.ReactNode {
@@ -114,6 +115,8 @@ export function BossDetailPage({ boss, navigate }: Props) {
   const [notesEditing, setNotesEditing] = useState(false)
   const [notesDraft,   setNotesDraft]   = useState('')
   const [showRitual,   setShowRitual]   = useState(false)
+  const [deathAnimKey, setDeathAnimKey] = useState(0)
+  const [deathBumpPending, setDeathBumpPending] = useState(false)
   const noteInputRef = useRef<HTMLInputElement>(null)
   const notesAreaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -123,7 +126,15 @@ export function BossDetailPage({ boss, navigate }: Props) {
     setFightTime('')
     setNotesEditing(false)
     setShowRitual(false)
+    setDeathBumpPending(false)
   }, [boss.id])
+
+  function triggerDeathAnim() {
+    setDeathAnimKey((k) => k + 1)
+    setDeathBumpPending(true)
+  }
+
+  const displayedDeathCount = deathBumpPending ? Math.max(deathCount - 1, 0) : deathCount
 
   useEffect(() => {
     if (activeFlow && !gifPickerEnabled) noteInputRef.current?.focus()
@@ -140,6 +151,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
     const ft      = mins > 0 ? mins : undefined
     if (activeFlow === 'death') {
       logAttempt(boss.id, { type: 'death', note: noteVal, fightTimeMinutes: ft })
+      triggerDeathAnim()
     } else if (activeFlow === 'vanquish') {
       markDefeated(boss.id, { note: noteVal, fightTimeMinutes: ft })
       setShowRitual(true)
@@ -160,6 +172,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
             gif: gif ?? undefined,
             fightTimeMinutes,
           })
+          triggerDeathAnim()
         },
       })
     } else {
@@ -280,8 +293,11 @@ export function BossDetailPage({ boss, navigate }: Props) {
             <p className="font-sans text-caption-uc uppercase tracking-[1.2px] text-ink-faded mb-1">
               Deaths
             </p>
-            <p className="font-mono font-bold text-parchment-text leading-none" style={{ fontSize: '3rem' }}>
-              {deathCount}
+            <p className="relative inline-block font-mono font-bold text-parchment-text leading-none" style={{ fontSize: '3rem' }}>
+              {deathBumpPending && (
+                <DeathStampDrop key={deathAnimKey} onLanded={() => setDeathBumpPending(false)} />
+              )}
+              {displayedDeathCount}
             </p>
             {defeated && (
               <p className="font-sans text-caption-uc uppercase tracking-[1.2px] text-jade mt-2">
