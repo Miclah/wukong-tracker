@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { BrushCloseIcon } from './BrushStroke';
 import { useGifDrawerStore } from '../store/useGifDrawerStore';
 import { useTrackerStore } from '../store/useTrackerStore';
 import type { GifData } from '../types';
@@ -231,7 +232,7 @@ function DrawerInner({
           aria-label="Close GIF picker"
           className="w-8 h-8 flex items-center justify-center rounded text-parchment-text-mute hover:text-parchment-text hover:bg-hairline/20 transition-colors"
         >
-          ✕
+          <BrushCloseIcon />
         </button>
       </div>
 

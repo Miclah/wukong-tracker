@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { BrushCloseIcon } from './BrushStroke';
 import { StatsCardForExport } from './StatsCardForExport';
 import { exportStatsPng } from '../lib/statsImage';
 import type { BossProgress } from '../types';
@@ -110,13 +111,12 @@ export function ExportPickerModal({ progress, unlockedAchievements, onClose }: P
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              fontSize: '22px',
               lineHeight: 1,
               color: M.inkMute,
               padding: '4px 8px',
             }}
           >
-            ×
+            <BrushCloseIcon size={18} />
           </button>
 
           <h2 style={{

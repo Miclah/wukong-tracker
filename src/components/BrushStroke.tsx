@@ -54,6 +54,26 @@ export function BrushStrokeHoverUnderline() {
   );
 }
 
+/** Close icon: two crossed brush strokes at 45°/-45° (replaces plain × / ✕). */
+export function BrushCloseIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 4 Q9 8 12 12 Q15 16 20 20"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M20 4 Q15 8 12 12 Q9 16 4 20"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Horizontal brush-stroke section divider (replaces plain border-t hr). */
 export function BrushStrokeDivider({ className = '' }: { className?: string }) {
   return (
