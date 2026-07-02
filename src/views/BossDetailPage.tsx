@@ -9,6 +9,7 @@ import { DifficultyRating } from '../components/DifficultyRating'
 import { SealStamp } from '../components/SealStamp'
 import { JournalTimeline } from '../components/JournalTimeline'
 import { BrushStrokeDivider } from '../components/BrushStroke'
+import { VanquishRitual } from '../components/VanquishRitual'
 
 // ── Inline markdown renderer ─────────────────────────────────────────────────
 function renderInline(text: string): React.ReactNode {
@@ -112,6 +113,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
   const [fightTime,    setFightTime]    = useState('')
   const [notesEditing, setNotesEditing] = useState(false)
   const [notesDraft,   setNotesDraft]   = useState('')
+  const [showRitual,   setShowRitual]   = useState(false)
   const noteInputRef = useRef<HTMLInputElement>(null)
   const notesAreaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -120,6 +122,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
     setNote('')
     setFightTime('')
     setNotesEditing(false)
+    setShowRitual(false)
   }, [boss.id])
 
   useEffect(() => {
@@ -139,6 +142,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
       logAttempt(boss.id, { type: 'death', note: noteVal, fightTimeMinutes: ft })
     } else if (activeFlow === 'vanquish') {
       markDefeated(boss.id, { note: noteVal, fightTimeMinutes: ft })
+      setShowRitual(true)
     }
     setActiveFlow(null)
     setNote('')
@@ -173,6 +177,7 @@ export function BossDetailPage({ boss, navigate }: Props) {
             gif: gif ?? undefined,
             fightTimeMinutes,
           })
+          setShowRitual(true)
         },
       })
     } else {
@@ -435,6 +440,8 @@ export function BossDetailPage({ boss, navigate }: Props) {
           </div>
         </div>
       </div>
+
+      {showRitual && <VanquishRitual onComplete={() => setShowRitual(false)} />}
     </div>
   )
 }
