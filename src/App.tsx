@@ -295,11 +295,31 @@ export default function App() {
                   </div>
                 </div>
                 <div className="max-w-[1280px] mx-auto px-6 py-6">
-                  <BossGridView
-                    bosses={visibleBosses}
-                    progress={progress}
-                    onBossClick={(boss) => navigate('/boss/' + boss.id)}
-                  />
+                  {chapter !== 0 && chapterStates[chapter - 1] === 'untouched' ? (
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-10">
+                        <span
+                          className="font-zh font-bold text-primary/10 select-none"
+                          style={{ fontSize: '14rem', lineHeight: 1 }}
+                        >
+                          未啟
+                        </span>
+                      </div>
+                      <div className="opacity-50">
+                        <BossGridView
+                          bosses={visibleBosses}
+                          progress={progress}
+                          onBossClick={(boss) => navigate('/boss/' + boss.id)}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <BossGridView
+                      bosses={visibleBosses}
+                      progress={progress}
+                      onBossClick={(boss) => navigate('/boss/' + boss.id)}
+                    />
+                  )}
                 </div>
               </div>
             )}

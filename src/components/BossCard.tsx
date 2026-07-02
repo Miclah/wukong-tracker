@@ -81,6 +81,7 @@ export function BossCard({ boss, progress, onClick }: Props) {
           className="w-full h-full object-cover"
           style={{
             objectPosition: `${(boss.focalPoint?.x ?? 0.5) * 100}% ${(boss.focalPoint?.y ?? 0.5) * 100}%`,
+            filter: !defeated && deaths === 0 ? 'grayscale(0.6) brightness(0.85)' : undefined,
           }}
         />
         {defeated && (
@@ -117,13 +118,21 @@ export function BossCard({ boss, progress, onClick }: Props) {
 
         {/* Death counter */}
         <div className="flex items-baseline gap-2">
-          <span className="font-mono text-counter-md font-bold text-ink">{deaths}</span>
-          {defeated ? (
-            <span className="text-caption-uc font-sans font-semibold text-jade">
-              vanquished
+          {!defeated && deaths === 0 ? (
+            <span className="font-display-alt italic text-body-sm text-ink-faded opacity-70">
+              awaits suffering
             </span>
           ) : (
-            <span className="text-caption text-ink-faded">deaths</span>
+            <>
+              <span className="font-mono text-counter-md font-bold text-ink">{deaths}</span>
+              {defeated ? (
+                <span className="text-caption-uc font-sans font-semibold text-jade">
+                  vanquished
+                </span>
+              ) : (
+                <span className="text-caption text-ink-faded">deaths</span>
+              )}
+            </>
           )}
         </div>
       </div>

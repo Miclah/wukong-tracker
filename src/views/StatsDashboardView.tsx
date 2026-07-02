@@ -170,6 +170,18 @@ export function StatsDashboardView() {
           />
         </div>
 
+        {unlockedAchievements.length === 0 && (
+          <div className="flex items-center gap-4 rounded-md border border-primary/30 bg-primary/5 px-5 py-4">
+            <svg width="44" height="44" viewBox="0 0 80 80" fill="none" aria-hidden="true" className="-rotate-[2deg] flex-shrink-0">
+              <rect x="2" y="2" width="76" height="76" rx="1.5" fill="#c4453a" />
+              <rect x="7" y="7" width="66" height="66" rx="0.5" fill="none" stroke="#f5e9d4" strokeWidth="1" opacity="0.45" />
+            </svg>
+            <p className="font-display-alt italic text-parchment-text text-[15px]">
+              Your legend begins with the first death.
+            </p>
+          </div>
+        )}
+
         {ACHIEVEMENT_CATEGORIES.map(({ key, sub }) => {
           const group = ACHIEVEMENTS.filter((a) => a.category === key);
           return (
