@@ -32,6 +32,28 @@ export function BrushStrokeUnderline() {
   );
 }
 
+/** Vermillion underline that draws left-to-right on hover of an ancestor `.group`. */
+export function BrushStrokeHoverUnderline() {
+  return (
+    <svg
+      width="100%"
+      height="4"
+      viewBox="0 0 100 4"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      className="brush-underline-hover"
+    >
+      <path
+        d="M 0 2 Q 18 0.8 40 2.2 Q 62 3.4 80 2 Q 90 1.2 100 2"
+        stroke="#c4453a"
+        strokeWidth="2.2"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Horizontal brush-stroke section divider (replaces plain border-t hr). */
 export function BrushStrokeDivider({ className = '' }: { className?: string }) {
   return (

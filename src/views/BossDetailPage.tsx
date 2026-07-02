@@ -11,6 +11,8 @@ import { JournalTimeline } from '../components/JournalTimeline'
 import { BrushStrokeDivider } from '../components/BrushStroke'
 import { VanquishRitual } from '../components/VanquishRitual'
 import { DeathStampDrop } from '../components/DeathStampDrop'
+import { InkSplatterLayer } from '../components/InkSplatter'
+import { useInkSplatter } from '../hooks/useInkSplatter'
 
 // ── Inline markdown renderer ─────────────────────────────────────────────────
 function renderInline(text: string): React.ReactNode {
@@ -119,6 +121,8 @@ export function BossDetailPage({ boss, navigate }: Props) {
   const [deathBumpPending, setDeathBumpPending] = useState(false)
   const noteInputRef = useRef<HTMLInputElement>(null)
   const notesAreaRef = useRef<HTMLTextAreaElement>(null)
+  const deathSplatter    = useInkSplatter()
+  const vanquishSplatter = useInkSplatter()
 
   useEffect(() => {
     setActiveFlow(null)
@@ -353,11 +357,13 @@ export function BossDetailPage({ boss, navigate }: Props) {
               <>
                 <button
                   onClick={handleDeathClick}
+                  onPointerDown={deathSplatter.onPointerDown}
                   disabled={defeated}
                   aria-label="Log a death"
-                  className="h-12 w-full rounded-md border border-primary/40 bg-canvas font-sans text-btn text-parchment-text tracking-[0.3px] transition-colors hover:border-primary/70 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="relative overflow-hidden h-12 w-full rounded-md border border-primary/40 bg-canvas font-sans text-btn text-parchment-text tracking-[0.3px] transition-colors hover:border-primary/70 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   I have died once more
+                  <InkSplatterLayer splatters={deathSplatter.splatters} />
                 </button>
                 {defeated ? (
                   <div
@@ -370,10 +376,12 @@ export function BossDetailPage({ boss, navigate }: Props) {
                 ) : (
                   <button
                     onClick={handleVanquishClick}
+                    onPointerDown={vanquishSplatter.onPointerDown}
                     aria-label="Mark as vanquished"
-                    className="h-12 w-full rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
+                    className="relative overflow-hidden h-12 w-full rounded-md bg-primary text-on-vermilion font-sans text-btn tracking-[0.3px] hover:bg-primary-active transition-colors"
                   >
                     Vanquished
+                    <InkSplatterLayer splatters={vanquishSplatter.splatters} />
                   </button>
                 )}
               </>

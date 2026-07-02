@@ -1,5 +1,6 @@
 import type { Boss, BossProgress } from '../types'
 import { InkBlotImage } from './InkBlotImage'
+import { BrushStrokeHoverUnderline } from './BrushStroke'
 
 interface Props {
   boss: Boss
@@ -112,6 +113,9 @@ export function BossCard({ boss, progress, onClick }: Props) {
           {defeated && <span className="text-jade mr-1.5">✓</span>}
           {boss.name}
         </h3>
+        <div className="w-16 mb-1.5">
+          <BrushStrokeHoverUnderline />
+        </div>
 
         {/* Chinese subtitle */}
         <p className="font-zh text-zh text-ink-mute mb-4">{boss.nameZh}</p>
